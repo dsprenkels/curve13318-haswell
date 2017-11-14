@@ -10,8 +10,8 @@ point on E is represented by its projective coordinates, i.e. (X : Y : Z).
 
 #include "fe.h"
 
-typedef fe ge[3];
-typedef fe ge_affine[2];
+typedef fe51 ge[3];
+typedef fe51 ge_affine[2];
 
 #define ge_frombytes crypto_scalarmult_curve13318_ref_ge_frombytes
 

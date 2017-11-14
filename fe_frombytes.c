@@ -26,18 +26,18 @@ static uint64_t load_4(const uint8_t *in)
   return result;
 }
 
-void fe_frombytes(fe h, const uint8_t *s)
+void fe51_frombytes(fe51 z, const uint8_t *s)
 {
-  uint64_t h0 = load_4(s);
-  uint64_t h1 = load_3(s + 4) << 6;
-  uint64_t h2 = load_3(s + 7) << 5;
-  uint64_t h3 = load_3(s + 10) << 3;
-  uint64_t h4 = load_3(s + 13) << 2;
-  uint64_t h5 = load_4(s + 16);
-  uint64_t h6 = load_3(s + 20) << 7;
-  uint64_t h7 = load_3(s + 23) << 5;
-  uint64_t h8 = load_3(s + 26) << 4;
-  uint64_t h9 = load_3(s + 29) << 2;
+  uint64_t z0 = load_4(s);
+  uint64_t z1 = load_3(s + 4) << 6;
+  uint64_t z2 = load_3(s + 7) << 5;
+  uint64_t z3 = load_3(s + 10) << 3;
+  uint64_t z4 = load_3(s + 13) << 2;
+  uint64_t z5 = load_4(s + 16);
+  uint64_t z6 = load_3(s + 20) << 7;
+  uint64_t z7 = load_3(s + 23) << 5;
+  uint64_t z8 = load_3(s + 26) << 4;
+  uint64_t z9 = load_3(s + 29) << 2;
   uint64_t carry0;
   uint64_t carry1;
   uint64_t carry2;
@@ -49,26 +49,26 @@ void fe_frombytes(fe h, const uint8_t *s)
   uint64_t carry8;
   uint64_t carry9;
 
-  carry9 = h9 >> 25; h0 += carry9 * 19; h9 &= 0x1FFFFFF;
-  carry1 = h1 >> 25; h2 += carry1; h1 &= 0x1FFFFFF;
-  carry3 = h3 >> 25; h4 += carry3; h3 &= 0x1FFFFFF;
-  carry5 = h5 >> 25; h6 += carry5; h5 &= 0x1FFFFFF;
-  carry7 = h7 >> 25; h8 += carry7; h7 &= 0x1FFFFFF;
+  carry9 = z9 >> 25; z0 += carry9 * 19; z9 &= 0x1FFFFFF;
+  carry1 = z1 >> 25; z2 += carry1; z1 &= 0x1FFFFFF;
+  carry3 = z3 >> 25; z4 += carry3; z3 &= 0x1FFFFFF;
+  carry5 = z5 >> 25; z6 += carry5; z5 &= 0x1FFFFFF;
+  carry7 = z7 >> 25; z8 += carry7; z7 &= 0x1FFFFFF;
 
-  carry0 = h0 >> 26; h1 += carry0; h0 &= 0x3FFFFFF;
-  carry2 = h2 >> 26; h3 += carry2; h2 &= 0x3FFFFFF;
-  carry4 = h4 >> 26; h5 += carry4; h4 &= 0x3FFFFFF;
-  carry6 = h6 >> 26; h7 += carry6; h6 &= 0x3FFFFFF;
-  carry8 = h8 >> 26; h9 += carry8; h8 &= 0x3FFFFFF;
+  carry0 = z0 >> 26; z1 += carry0; z0 &= 0x3FFFFFF;
+  carry2 = z2 >> 26; z3 += carry2; z2 &= 0x3FFFFFF;
+  carry4 = z4 >> 26; z5 += carry4; z4 &= 0x3FFFFFF;
+  carry6 = z6 >> 26; z7 += carry6; z6 &= 0x3FFFFFF;
+  carry8 = z8 >> 26; z9 += carry8; z8 &= 0x3FFFFFF;
 
-  h[0] = h0;
-  h[1] = h1;
-  h[2] = h2;
-  h[3] = h3;
-  h[4] = h4;
-  h[5] = h5;
-  h[6] = h6;
-  h[7] = h7;
-  h[8] = h8;
-  h[9] = h9;
+  z[0] = z0;
+  z[1] = z1;
+  z[2] = z2;
+  z[3] = z3;
+  z[4] = z4;
+  z[5] = z5;
+  z[6] = z6;
+  z[7] = z7;
+  z[8] = z8;
+  z[9] = z9;
 }

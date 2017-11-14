@@ -7,8 +7,8 @@
 
 int ge_frombytes(ge p, const uint8_t *s)
 {
-    fe_frombytes(p[0], &s[0]);
-    fe_frombytes(p[1], &s[32]);
+    fe51_frombytes(p[0], &s[0]);
+    fe51_frombytes(p[1], &s[32]);
     p[2][0] = 1;
     for (int i = 1; i < 10; i++) p[2][i] = 0;
 

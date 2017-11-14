@@ -1,7 +1,7 @@
 #include "fe.h"
 #include <inttypes.h>
 
-void fe_mul(fe h, fe f, fe g)
+void fe51_mul(fe51 h, const fe51 f, const fe51 g)
 {
     // Precompute (19*g_1, ..., 19*g_9)
     const uint64_t g19_1 = 19*g[1];
@@ -131,57 +131,66 @@ void fe_mul(fe h, fe f, fe g)
     h[7] += f[9] * g19_8;
     h[8] += f2_9 * g19_9;
     h[9] += f[9] * g[0];
+
+    // Carry immediately, this will be optimized later
+    fe51_carry(h);
 }
 
-void fe_carry(fe h)
+void fe51_square(fe51 h, const fe51 f)
 {
-    // Interleave two carry chains (7 rounds):
-    //   - a: h[0] -> h[1] -> h[2] -> h[3] -> h[4] -> h[5] -> h[6]
-    //   - b: h[5] -> h[6] -> h[7] -> h[8] -> h[9] -> h[0] -> h[1]
+    // TODO(dsprenkels) Implement this function
+    fe51_mul(h, f, f);
+}
+
+void fe51_carry(fe51 z)
+{
+    // Interleave two carry czains (7 rounds):
+    //   - a: z[0] -> z[1] -> z[2] -> z[3] -> z[4] -> z[5] -> z[6]
+    //   - b: z[5] -> z[6] -> z[7] -> z[8] -> z[9] -> z[0] -> z[1]
     static const uint64_t mask25 = 0xfffffffffe000000;
     static const uint64_t mask26 = 0xfffffffffc000000;
 
-    uint64_t tmp;
-    tmp = h[0] & mask26; // Round 1a
-    h[0] ^= tmp;
-    h[1] += tmp >> 26;
-    tmp = h[5] & mask25;  // Round 1b
-    h[5] ^= tmp;
-    h[6] += tmp >> 25;
-    tmp = h[1] & mask25; // Round 2a
-    h[1] ^= tmp;
-    h[2] += tmp >> 25;
-    tmp = h[6] & mask26; // Round 2b
-    h[6] ^= tmp;
-    h[7] += tmp >> 26;
-    tmp = h[2] & mask26; // Round 3a
-    h[2] ^= tmp;
-    h[3] += tmp >> 26;
-    tmp = h[7] & mask25; // Round 3b
-    h[7] ^= tmp;
-    h[8] += tmp >> 25;
-    tmp = h[3] & mask25; // Round 4a
-    h[3] ^= tmp;
-    h[4] += tmp >> 25;
-    tmp = h[8] & mask26; // Round 4b
-    h[8] ^= tmp;
-    h[9] += tmp >> 26;
-    tmp = h[4] & mask26; // Round 5a
-    h[4] ^= tmp;
-    h[5] += tmp >> 26;
-    tmp = h[9] & mask26; // Round 5b
-    h[9] ^= tmp;
-    h[0] += 38 * (tmp >> 26);
-    tmp = h[5] & mask25; // Round 6a
-    h[5] ^= tmp;
-    h[6] += tmp >> 25;
-    tmp = h[0] & mask26; // Round 6b
-    h[0] ^= tmp;
-    h[1] += tmp >> 26;
-    tmp = h[6] & mask26; // Round 7a
-    h[6] ^= tmp;
-    h[7] += tmp >> 26;
-    tmp = h[1] & mask25; // Round 7b :)
-    h[1] ^= tmp;
-    h[2] += tmp >> 25;
+    uint64_t t;
+    t = z[0] & mask26; // Round 1a
+    z[0] ^= t;
+    z[1] += t >> 26;
+    t = z[5] & mask25; // Round 1b
+    z[5] ^= t;
+    z[6] += t >> 25;
+    t = z[1] & mask25; // Round 2a
+    z[1] ^= t;
+    z[2] += t >> 25;
+    t = z[6] & mask26; // Round 2b
+    z[6] ^= t;
+    z[7] += t >> 26;
+    t = z[2] & mask26; // Round 3a
+    z[2] ^= t;
+    z[3] += t >> 26;
+    t = z[7] & mask25; // Round 3b
+    z[7] ^= t;
+    z[8] += t >> 25;
+    t = z[3] & mask25; // Round 4a
+    z[3] ^= t;
+    z[4] += t >> 25;
+    t = z[8] & mask26; // Round 4b
+    z[8] ^= t;
+    z[9] += t >> 26;
+    t = z[4] & mask26; // Round 5a
+    z[4] ^= t;
+    z[5] += t >> 26;
+    t = z[9] & mask26; // Round 5b
+    z[9] ^= t;
+    z[0] += 38 * (t >> 26);
+    t = z[5] & mask25; // Round 6a
+    z[5] ^= t;
+    z[6] += t >> 25;
+    t = z[0] & mask26; // Round 6b
+    z[0] ^= t;
+    z[1] += t >> 26;
+    t = z[6] & mask26; // Round 7a
+    z[6] ^= t;
+    z[7] += t >> 26;
+    t = z[1] & mask25; // Round 7b :)
+    z[1] ^= t;
+    z[2] += t >> 25;
 }

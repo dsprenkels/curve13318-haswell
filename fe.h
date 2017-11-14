@@ -17,25 +17,38 @@ Bernstein, D. J. & Schwabe, P. Prouff, E. & Schaumont, P. (Eds.)
 
 #include <inttypes.h>
 
-typedef uint64_t fe[10];
+typedef uint64_t fe51[10];
 
-#define fe_frombytes crypto_scalarmult_curve13318_ref_fe_frombytes
-#define fe_mul crypto_scalarmult_curve13318_ref_fe_mul
-#define fe_carry crypto_scalarmult_curve13318_ref_fe_carry
+#define fe51_frombytes crypto_scalarmult_curve13318_ref_fe51_frombytes
+#define fe51_mul crypto_scalarmult_curve13318_ref_fe51_mul
+#define fe51_square crypto_scalarmult_curve13318_ref_fe51_square
+#define fe51_carry crypto_scalarmult_curve13318_ref_fe51_carry
+#define fe51_invert crypto_scalarmult_curve13318_ref_fe51_invert
 
 /*
 Parse 32 bytes into a `fe` type
 */
-extern void fe_frombytes(fe element, const uint8_t *bytes);
+extern void fe51_frombytes(fe51 element, const uint8_t *bytes);
 
 /*
 Multiply two field elements,
 */
-extern void fe_mul(fe dest, fe op1, fe op2);
+extern void fe51_mul(fe51 dest, const fe51 op1, const fe51 op2);
+
+/*
+Square a field element
+*/
+extern void fe51_square(fe51 dest, const fe51 element);
 
 /*
 Reduce this vectorized elements modulo 2^25.5
 */
-extern void fe_carry(fe element);
+extern void fe51_carry(fe51 element);
+
+/*
+Invert an element modulo 2^255 - 19
+*/
+extern void fe51_invert(fe51 dest, const fe51 element);
+
 
 #endif // CURVE13318_FE_H_
