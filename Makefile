@@ -2,8 +2,7 @@ CC = clang
 CFLAGS += -m64 -std=c99 -pedantic -Wall -Wshadow -Wpointer-arith -Wcast-qual \
           -Wstrict-prototypes -Wmissing-prototypes -fPIC -g -O3
 SRCS = fe_frombytes.c \
-       fe_mul.c \
-       fe_invert.c \
+       fe.c \
        ge_frombytes.c \
        scalarmult.c
 OBJS := ${SRCS:.c=.o}

@@ -11,9 +11,9 @@ point on E is represented by its projective coordinates, i.e. (X : Y : Z).
 #include "fe.h"
 
 typedef fe51 ge[3];
-typedef fe51 ge_affine[2];
 
 #define ge_frombytes crypto_scalarmult_curve13318_ref_ge_frombytes
+#define ge_tobytes crypto_scalarmult_curve13318_ref_ge_tobytes
 
 
 /*
@@ -26,5 +26,16 @@ Returns:
   0 on succes, nonzero on failure
 */
 int ge_frombytes(ge point, const uint8_t *bytes);
+
+/*
+Convert a projective point on the curve to its byte representation
+
+Arguments:
+  - bytes   Output bytes
+  - point   Output point
+Returns:
+  0 on succes, nonzero on failure
+*/
+void ge_tobytes(uint8_t *bytes, const ge point);
 
 #endif // CURVE13318_GE_H_
