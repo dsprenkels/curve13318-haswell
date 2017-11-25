@@ -10,7 +10,7 @@ point on E is represented by its projective coordinates, i.e. (X : Y : Z).
 
 #include "fe.h"
 
-typedef fe51 ge[3];
+typedef fe ge[3];
 
 #define ge_frombytes crypto_scalarmult_curve13318_ref_ge_frombytes
 #define ge_tobytes crypto_scalarmult_curve13318_ref_ge_tobytes
@@ -36,6 +36,6 @@ Arguments:
 Returns:
   0 on succes, nonzero on failure
 */
-void ge_tobytes(uint8_t *bytes, const ge point);
+void ge_tobytes(uint8_t *bytes, ge point);
 
 #endif // CURVE13318_GE_H_
