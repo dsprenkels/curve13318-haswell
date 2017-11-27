@@ -41,6 +41,8 @@ fe_reduce = curve13318.crypto_scalarmult_curve13318_ref_fe_reduce
 fe_reduce.argtypes = [ctypes.c_uint64 * 10]
 ge_frombytes = curve13318.crypto_scalarmult_curve13318_ref_ge_frombytes
 ge_frombytes.argtypes = [ctypes.c_uint64 * 30, ctypes.c_ubyte * 64]
+ge_tobytes = curve13318.crypto_scalarmult_curve13318_ref_ge_tobytes
+ge_tobytes.argtypes = [ctypes.c_ubyte * 64, ctypes.c_uint64 * 30]
 
 
 def fe_dumps(h):
@@ -65,6 +67,12 @@ def make_fe(initial_value=[]):
     for i, limb in enumerate(initial_value):
         h[i] = limb
     return h
+
+def make_point(initial_value=[]):
+    p = (ctypes.c_uint64 * 30)(0)
+    for i, limb in enumerate(initial_value):
+        p[i] = limb
+    return p
 
 
 class TestFE(unittest.TestCase):
@@ -101,6 +109,26 @@ class TestFE(unittest.TestCase):
         for i, b in enumerate(c_bytes):
             actual += b * 2**(8*i)
         self.assertEqual(actual, expected)
+
+    @given(st.integers(0, 2**255 - 1))
+    def test_tobytes(self, z):
+        z = self.F(z)
+
+        # Encode the number in its C representation
+        shift = 0
+        limbs = [0]*10
+        for i in range(10):
+            mask_width = 26 if i % 2 == 0 else 25
+            limbs[i] = (2**mask_width - 1) & (z.lift() >> shift)
+            shift += mask_width
+        c_fe = make_fe(limbs)
+        c_bytes = (ctypes.c_ubyte * 32)(0)
+        fe_tobytes(c_bytes, c_fe)
+
+        actual_z = 0
+        for i, b in enumerate(c_bytes):
+            actual_z += b * 2**(8*i)
+        self.assertEqual(actual_z, z)
 
     @given(st.tuples(
         st.lists(st.integers(0, 255), min_size=32, max_size=32),
@@ -162,54 +190,87 @@ class TestGE(unittest.TestCase):
         self.F = FiniteField(P)
         self.E = EllipticCurve(self.F, [-3, 13318])
 
-    def construct_y(self, x, sign=None):
-        if sign == 1:
-            return self.F(sqrt(x**3 - 3*x + 13318))
-        elif sign == -1:
-            return self.F(-sqrt(x**3 - 3*x + 13318))
-        elif sign == None:
-            return None
-        else:
-            raise AssertionError
-
-    @given(st.integers(0, 2**256 - 1), st.integers(0, 2**256 - 1),
-           st.sampled_from([1, -1, None]))
-    @example(0, 0, None) # point at infinity
-    def test_frombytes(self, x, y_suggest, sign):
-        x = self.F(x)
-        try:
-            y = self.construct_y(x, sign)
-            if y == None:
-                y = self.F(y_suggest)
-        except ValueError:
-            # `sqrt` failed
-            assume(False)
-
-        # Is the point valid?
-        try:
-            if x == 0 and y == 0:
-                # We are dealing with ∞
-                point = self.E(0)
-            else:
-                point = self.E(x, y)
-            expected = 0
-        except TypeError:
-            point = (x, y, 1)
-            expected = -1
-
+    @staticmethod
+    def point_to_cbytes(x, y):
+        """Encode the numbers as byte input"""
         # Encode the numbers as byte input
         c_bytes = (ctypes.c_ubyte * 64)(0)
         for i in range(32):
-            c_bytes[i] = (x.lift() >> (8*i)) & 0xFF
+            c_bytes[i] = (x >> (8*i)) & 0xFF
         for i in range(32):
-            c_bytes[32+i] = (y.lift() >> (8*i)) & 0xFF
+            c_bytes[32+i] = (y >> (8*i)) & 0xFF
+        return c_bytes
 
+    @given(st.integers(0, 2**256 - 1), st.integers(0, 2**256 - 1),
+           st.sampled_from([1, -1]))
+    @example(0, 0, 1) # point at infinity
+    def test_frombytes(self, x, y_suggest, sign):
+        x = self.F(x)
+        try:
+            x, y = (sign * self.E(x, y_suggest)).xy()
+            expected_y = y
+            expected = 0
+        except TypeError:
+            # `sqrt` failed
+            if x == 0 and y_suggest == 0:
+                y, expected_y = self.F(0), self.F(1)
+                z = self.F(0)
+                expected = 0
+            else:
+                y, expected_y = self.F(y_suggest), self.F(y_suggest)
+                z = self.F(1)
+                expected = -1
+
+        c_bytes = self.point_to_cbytes(x.lift(), y.lift())
         c_point = (ctypes.c_uint64 * 30)(0)
         ret = ge_frombytes(c_point, c_bytes)
         self.assertEqual(ret, expected)
-        self.assertEqual(fe_val(c_point[ 0:10]), point[0])
-        self.assertEqual(fe_val(c_point[10:20]), point[1])
-        self.assertEqual(fe_val(c_point[20:30]), point[2])
+        self.assertEqual(fe_val(c_point[ 0:10]), x)
+        self.assertEqual(fe_val(c_point[10:20]), expected_y)
+        self.assertEqual(fe_val(c_point[20:30]), z)
+
+    @given(st.integers(0, 2**256 - 1), st.integers(0, 2**256 - 1),
+           st.sampled_from([1, -1]))
+    @example(0, 0, 1) # a point at infinity
+    def test_tobytes(self, x, z, sign):
+        if z != 0:
+            try:
+                point = sign * self.E.lift_x(self.F(x))
+            except ValueError:
+                assume(False)
+            x, y = point.xy()
+            z = self.F(z)
+            x, y = z * x, z * y
+        else:
+            point = self.E(0)
+            x, y, z = self.F(x), self.F(1), self.F(z)
+
+        # Encode a point in its C representation
+        shift = 0
+        x_limbs, y_limbs, z_limbs = [0]*10, [0]*10, [0]*10
+        for i in range(10):
+            mask_width = 26 if i % 2 == 0 else 25
+            x_limbs[i] = (2**mask_width - 1) & (x.lift() >> shift)
+            y_limbs[i] = (2**mask_width - 1) & (y.lift() >> shift)
+            z_limbs[i] = (2**mask_width - 1) & (z.lift() >> shift)
+            shift += mask_width
+        c_point = make_point(x_limbs + y_limbs + z_limbs)
+        c_bytes = (ctypes.c_ubyte * 64)(0)
+        ge_tobytes(c_bytes, c_point)
+
+        if point[2] != 0:
+            expected_x, expected_y = point.xy()
+        else:
+            expected_x, expected_y = self.F(0), self.F(0)
+
+        actual_x, actual_y = self.F(0), self.F(0)
+        for i, b in enumerate(c_bytes[0:32]):
+            actual_x += b * 2**(8*i)
+        for i, b in enumerate(c_bytes[32:64]):
+            actual_y += b * 2**(8*i)
+        self.assertEqual(actual_x, expected_x)
+        self.assertEqual(actual_y, expected_y)
+
 
 if __name__ == '__main__':
     unittest.main()
