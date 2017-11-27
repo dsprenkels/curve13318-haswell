@@ -53,15 +53,15 @@ static inline void fe_one(fe z) {
 /*
 Copy a fe value to another fe type
 */
-static inline void fe_copy(fe dest, fe src) {
+static inline void fe_copy(fe dest, const fe src) {
     for (unsigned int i = 0; i < 10; i++) dest[i] = src[i];
 }
 
 /*
 Add `rhs` into `z`
 */
-static inline void fe_add(fe z, fe rhs) {
-    for (unsigned int i = 0; i < 10; i++) z[i] += rhs[i];
+static inline void fe_add(fe z, fe lhs, fe rhs) {
+    for (unsigned int i = 0; i < 10; i++) z[i] = lhs[i] + rhs[i];
 }
 
 /*
@@ -82,12 +82,28 @@ static inline void fe_add2p(fe z) {
 }
 
 /*
+Add 4*p to the field element `z`. Useful when 2*p is not enough.
+*/
+static inline void fe_add4p(fe z) {
+    z[0] += _4P0;
+    z[1] += _4PRestB25;
+    z[2] += _4PRestB26;
+    z[3] += _4PRestB25;
+    z[4] += _4PRestB26;
+    z[5] += _4PRestB25;
+    z[6] += _4PRestB26;
+    z[7] += _4PRestB25;
+    z[8] += _4PRestB26;
+    z[9] += _4PRestB25;
+}
+
+/*
 Subtract `rhs` from `z`. This function does *not* work if any of the resulting
 limbs underflow! Ensure that this is not occurs by adding additional carry
 rippling and using `fe_add2p`.
 */
-static inline void fe_sub(fe z, fe rhs) {
-    for (unsigned int i = 0; i < 10; i++) z[i] -= rhs[i];
+static inline void fe_sub(fe z, fe lhs, fe rhs) {
+    for (unsigned int i = 0; i < 10; i++) z[i] = lhs[i] - rhs[i];
 }
 
 /*
@@ -135,8 +151,8 @@ static inline void fe_add_b(fe z) {
 /*
 Multiply `z` by 13318
 */
-static inline void fe_mul_b(fe z) {
-    for (unsigned int i = 0; i < 10; i++) z[i] *= CURVE13318_B;
+static inline void fe_mul_b(fe z, fe op) {
+    for (unsigned int i = 0; i < 10; i++) z[i] = op[i] * CURVE13318_B;
     fe_carry(z);
 }
 

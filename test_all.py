@@ -9,7 +9,8 @@ import unittest
 
 from sage.all import *
 
-from hypothesis import assume, example, given, settings, strategies as st, unlimited
+from hypothesis import assume, example, given, note, settings, \
+                       strategies as st, unlimited
 
 P = 2**255 - 19
 
@@ -43,6 +44,8 @@ ge_frombytes = curve13318.crypto_scalarmult_curve13318_ref_ge_frombytes
 ge_frombytes.argtypes = [ctypes.c_uint64 * 30, ctypes.c_ubyte * 64]
 ge_tobytes = curve13318.crypto_scalarmult_curve13318_ref_ge_tobytes
 ge_tobytes.argtypes = [ctypes.c_ubyte * 64, ctypes.c_uint64 * 30]
+ge_add = curve13318.crypto_scalarmult_curve13318_ref_ge_add
+ge_add.argtypes = [ctypes.c_uint64 * 30] * 3
 
 
 def fe_dumps(h):
@@ -67,13 +70,6 @@ def make_fe(initial_value=[]):
     for i, limb in enumerate(initial_value):
         h[i] = limb
     return h
-
-def make_point(initial_value=[]):
-    p = (ctypes.c_uint64 * 30)(0)
-    for i, limb in enumerate(initial_value):
-        p[i] = limb
-    return p
-
 
 class TestFE(unittest.TestCase):
     def setUp(self):
@@ -190,8 +186,52 @@ class TestGE(unittest.TestCase):
         self.F = FiniteField(P)
         self.E = EllipticCurve(self.F, [-3, 13318])
 
+    def make_point(self, x, z, sign):
+        if z != 0:
+            try:
+                point = sign * self.E.lift_x(self.F(x))
+            except ValueError:
+                assume(False)
+            x, y = point.xy()
+            z = self.F(z)
+            x, y = z * x, z * y
+        else:
+            point = self.E(0)
+            x, y, z = self.F(0), self.F(1), self.F(z)
+        return (x, y, z), point
+
     @staticmethod
-    def point_to_cbytes(x, y):
+    def encode_point(x, y, z):
+        """Encode a point in its C representation"""
+        shift = 0
+        x_limbs, y_limbs, z_limbs = [0]*10, [0]*10, [0]*10
+        for i in range(10):
+            mask_width = 26 if i % 2 == 0 else 25
+            x_limbs[i] = (2**mask_width - 1) & (x.lift() >> shift)
+            y_limbs[i] = (2**mask_width - 1) & (y.lift() >> shift)
+            z_limbs[i] = (2**mask_width - 1) & (z.lift() >> shift)
+            shift += mask_width
+
+        p = (ctypes.c_uint64 * 30)(0)
+        for i, limb in enumerate(x_limbs + y_limbs + z_limbs):
+            p[i] = limb
+        return p
+
+    def decode_point(self, point):
+        x = fe_val(point[ 0:10])
+        y = fe_val(point[10:20])
+        z = fe_val(point[20:30])
+        return (x, y, z)
+
+    def decode_bytes(self, c_bytes):
+        x, y = self.F(0), self.F(0)
+        for i, b in enumerate(c_bytes[0:32]):
+            x += b * 2**(8*i)
+        for i, b in enumerate(c_bytes[32:64]):
+            y += b * 2**(8*i)
+        return x, y
+
+    def point_to_bytes(self, x, y):
         """Encode the numbers as byte input"""
         # Encode the numbers as byte input
         c_bytes = (ctypes.c_ubyte * 64)(0)
@@ -204,6 +244,8 @@ class TestGE(unittest.TestCase):
     @given(st.integers(0, 2**256 - 1), st.integers(0, 2**256 - 1),
            st.sampled_from([1, -1]))
     @example(0, 0, 1) # point at infinity
+    @example(0, P, 1)
+    @example(0, 2*P, 1)
     def test_frombytes(self, x, y_suggest, sign):
         x = self.F(x)
         try:
@@ -212,7 +254,7 @@ class TestGE(unittest.TestCase):
             expected = 0
         except TypeError:
             # `sqrt` failed
-            if x == 0 and y_suggest == 0:
+            if self.F(x) == 0 and self.F(y_suggest) == 0:
                 y, expected_y = self.F(0), self.F(1)
                 z = self.F(0)
                 expected = 0
@@ -221,9 +263,10 @@ class TestGE(unittest.TestCase):
                 z = self.F(1)
                 expected = -1
 
-        c_bytes = self.point_to_cbytes(x.lift(), y.lift())
+        c_bytes = self.point_to_bytes(x.lift(), y.lift())
         c_point = (ctypes.c_uint64 * 30)(0)
         ret = ge_frombytes(c_point, c_bytes)
+        actual_x, actual_y, actual_z = self.decode_point(c_point)
         self.assertEqual(ret, expected)
         self.assertEqual(fe_val(c_point[ 0:10]), x)
         self.assertEqual(fe_val(c_point[10:20]), expected_y)
@@ -232,44 +275,72 @@ class TestGE(unittest.TestCase):
     @given(st.integers(0, 2**256 - 1), st.integers(0, 2**256 - 1),
            st.sampled_from([1, -1]))
     @example(0, 0, 1) # a point at infinity
+    @example(0, P, 1)
+    @example(0, 2*P, 1)
     def test_tobytes(self, x, z, sign):
-        if z != 0:
-            try:
-                point = sign * self.E.lift_x(self.F(x))
-            except ValueError:
-                assume(False)
-            x, y = point.xy()
-            z = self.F(z)
-            x, y = z * x, z * y
-        else:
-            point = self.E(0)
-            x, y, z = self.F(x), self.F(1), self.F(z)
-
-        # Encode a point in its C representation
-        shift = 0
-        x_limbs, y_limbs, z_limbs = [0]*10, [0]*10, [0]*10
-        for i in range(10):
-            mask_width = 26 if i % 2 == 0 else 25
-            x_limbs[i] = (2**mask_width - 1) & (x.lift() >> shift)
-            y_limbs[i] = (2**mask_width - 1) & (y.lift() >> shift)
-            z_limbs[i] = (2**mask_width - 1) & (z.lift() >> shift)
-            shift += mask_width
-        c_point = make_point(x_limbs + y_limbs + z_limbs)
+        (x, y, z), point = self.make_point(x, z, sign)
+        c_point = self.encode_point(x, y, z)
         c_bytes = (ctypes.c_ubyte * 64)(0)
         ge_tobytes(c_bytes, c_point)
 
-        if point[2] != 0:
+        if z != 0:
             expected_x, expected_y = point.xy()
         else:
             expected_x, expected_y = self.F(0), self.F(0)
 
-        actual_x, actual_y = self.F(0), self.F(0)
-        for i, b in enumerate(c_bytes[0:32]):
-            actual_x += b * 2**(8*i)
-        for i, b in enumerate(c_bytes[32:64]):
-            actual_y += b * 2**(8*i)
+        actual_x, actual_y = self.decode_bytes(c_bytes)
         self.assertEqual(actual_x, expected_x)
         self.assertEqual(actual_y, expected_y)
+
+    @given(st.integers(0, 2**256 - 1), st.integers(0, 2**256 - 1),
+           st.sampled_from([1, -1]),   st.integers(0, 2**256 - 1),
+           st.integers(0, 2**256 - 1), st.sampled_from([1, -1]))
+    @example(0, 0, 1, 0, 0, 1)
+    def test_add(self, x1, z1, sign1, x2, z2, sign2):
+        (x1, y1, z1), point1 = self.make_point(x1, z1, sign1)
+        (x2, y2, z2), point2 = self.make_point(x2, z2, sign2)
+        c_point1 = self.encode_point(x1, y1, z1)
+        c_point2 = self.encode_point(x2, y2, z2)
+        c_point3 = (ctypes.c_uint64 * 30)(0)
+        ge_add(c_point3, c_point1, c_point2)
+        x3, y3, z3 = self.decode_point(c_point3)
+        expected = point1 + point2
+        note("Expected: {}".format(expected))
+        note("Actual: ({} : {} : {})".format(x3, y3, z3))
+        if expected == self.E(0):
+            self.assertEqual(self.F(z3), 0)
+            return
+        actual = self.E([self.F(x3), self.F(y3), self.F(z3)])
+        self.assertEqual(actual, expected)
+
+    @given(st.integers(0, 2**256 - 1), st.integers(0, 2**256 - 1),
+           st.sampled_from([1, -1]),   st.integers(0, 2**256 - 1),
+           st.integers(0, 2**256 - 1), st.sampled_from([1, -1]))
+    @example(0, 0, 1, 0, 0, 1)
+    def test_add_ref(self, x1, z1, sign1, x2, z2, sign2):
+        (x1, y1, z1), point1 = self.make_point(x1, z1, sign1)
+        (x2, y2, z2), point2 = self.make_point(x2, z2, sign2)
+        note("testing: {} + {}".format(point1, point2))
+        note("locals(): {}".format(locals()))
+        x1, y1, z1 = self.F(x1), self.F(y1), self.F(z1)
+        x2, y2, z2 = self.F(x2), self.F(y2), self.F(z2)
+        b = 13318
+        t0 = x1 * x2;        t1 = y1 * y2;        t2 = z1 * z2
+        t3 = x1 + y1;        t4 = x2 + y2;        t3 = t3 * t4
+        t4 = t0 + t1;        t3 = t3 - t4;        t4 = y1 + z1
+        x3 = y2 + z2;        t4 = t4 * x3;        x3 = t1 + t2
+        t4 = t4 - x3;        x3 = x1 + z1;        y3 = x2 + z2
+        x3 = x3 * y3;        y3 = t0 + t2;        y3 = x3 - y3
+        z3 =  b * t2;        x3 = y3 - z3;        z3 = x3 + x3
+        x3 = x3 + z3;        z3 = t1 - x3;        x3 = t1 + x3
+        y3 =  b * y3;        t1 = t2 + t2;        t2 = t1 + t2
+        y3 = y3 - t2;        y3 = y3 - t0;        t1 = y3 + y3
+        y3 = t1 + y3;        t1 = t0 + t0;        t0 = t1 + t0
+        t0 = t0 - t2;        t1 = t4 * y3;        t2 = t0 * y3
+        y3 = x3 * z3;        y3 = y3 + t2;        x3 = x3 * t3
+        x3 = x3 - t1;        z3 = z3 * t4;        t1 = t3 * t0
+        z3 = z3 + t1
+        self.assertEqual(self.E([x3, y3, z3]), point1 + point2)
 
 
 if __name__ == '__main__':

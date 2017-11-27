@@ -4,6 +4,7 @@ CFLAGS += -m64 -std=c99 -pedantic -Wall -Wshadow -Wpointer-arith -Wcast-qual \
 SRCS = fe.c \
        fe_frombytes.c \
        fe_tobytes.c \
+       ge.c \
        ge_frombytes.c \
        ge_tobytes.c \
        scalarmult.c

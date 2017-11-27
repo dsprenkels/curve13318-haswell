@@ -180,9 +180,9 @@ void fe_carry(fe z)
     t = z[4] & MASK26; // Round 5a
     z[4] ^= t;
     z[5] += t >> 26;
-    t = z[9] & MASK26; // Round 5b
+    t = z[9] & MASK25; // Round 5b
     z[9] ^= t;
-    z[0] += 38 * (t >> 26);
+    z[0] += 19 * (t >> 25);
     t = z[5] & MASK25; // Round 6a
     z[5] ^= t;
     z[6] += t >> 25;

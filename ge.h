@@ -14,6 +14,8 @@ typedef fe ge[3];
 
 #define ge_frombytes crypto_scalarmult_curve13318_ref_ge_frombytes
 #define ge_tobytes crypto_scalarmult_curve13318_ref_ge_tobytes
+#define ge_add crypto_scalarmult_curve13318_ref_ge_add
+#define ge_double crypto_scalarmult_curve13318_ref_ge_double
 
 
 /*
@@ -37,5 +39,16 @@ Returns:
   0 on succes, nonzero on failure
 */
 void ge_tobytes(uint8_t *bytes, ge point);
+
+/*
+Add two `point_1` and `point_2` into `out`.
+*/
+void ge_add(ge dest, const ge point_1, const ge point_2);
+
+/*
+Double `point` into `out`.
+*/
+void ge_double(ge dest, const ge point);
+
 
 #endif // CURVE13318_GE_H_
