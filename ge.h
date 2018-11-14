@@ -8,14 +8,14 @@ point on E is represented by its projective coordinates, i.e. (X : Y : Z).
 #ifndef CURVE13318_GE_H_
 #define CURVE13318_GE_H_
 
-#include "fe.h"
+#include "fe10.h"
 
-typedef fe ge[3];
+typedef fe10 ge[3];
 
-#define ge_frombytes crypto_scalarmult_curve13318_ref_ge_frombytes
-#define ge_tobytes crypto_scalarmult_curve13318_ref_ge_tobytes
-#define ge_add crypto_scalarmult_curve13318_ref_ge_add
-#define ge_double crypto_scalarmult_curve13318_ref_ge_double
+#define ge_frombytes crypto_scalarmult_curve13318_avx2_ge_frombytes
+#define ge_tobytes crypto_scalarmult_curve13318_avx2_ge_tobytes
+#define ge_double crypto_scalarmult_curve13318_avx2_ge_double
+#define ge_add crypto_scalarmult_curve13318_avx2_ge_add
 
 
 /*

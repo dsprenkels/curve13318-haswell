@@ -4,18 +4,89 @@ This code uses the Renes-Costello-Batina addition formulas, for fast and
 secure double-and-adding.
 */
 
-#include "fe.h"
+#include "fe10.h"
 #include "ge.h"
+
+void ge_double(ge p3, const ge p)
+{
+    fe10 x, y, z, x3, y3, z3, t0, t1, t2, t3;
+    fe10_copy(x, p[0]);
+    fe10_copy(y, p[1]);
+    fe10_copy(z, p[2]);
+
+    /*
+    The same rules and assumptions from ge_add are in force here. Notably, we
+    know that a multiplication result is bounded by ±1.01 * 2^21 and that it is
+    all right if the product of two fe10_mul operands is not bigger than
+    0.98 * 2^53 * 2^k.
+    */
+    /*   #: Instruction number as mentioned in the paper */
+              // Assume forall x in {x1, z1, y1, y2, x2, z2} : |x| ≤ 1.01 * 2^21
+              fe10_square(t0, x);   // |t0| ≤ 1.68 * 2^49
+              fe10_square(t1, y);   // |t1| ≤ 1.68 * 2^49
+              fe10_square(t2, z);   // |t2| ≤ 1.68 * 2^49
+              fe10_mul(t3, x, y);   // |t3| ≤ 1.68 * 2^49
+    /*  5 */  fe10_add(t3, t3, t3); // |t3| ≤ 1.68 * 2^50
+    /* __ */  fe10_carry(t2);     // carry |t2| ≤ 1.01 * 2^21
+    /* __ */  fe10_carry(t3);     // carry |t2| ≤ 1.01 * 2^21
+              fe10_mul(z3, x, z);   // |z3| ≤ 1.68 * 2^49
+              fe10_add(z3, z3, z3); // |z3| ≤ 1.68 * 2^50
+              fe10_mul_b(y3, t2);   // |y3| ≤ 1.65 * 2^34
+              fe10_sub(y3, y3, z3); // |y3| ≤ 1.69 * 2^50
+    /* 10 */  fe10_add(x3, y3, y3); // |x3| ≤ 1.69 * 2^51
+              fe10_add(y3, x3, y3); // |y3| ≤ 1.27 * 2^52
+              fe10_sub(x3, t1, y3); // |x3| ≤ 1.48 * 2^52
+              fe10_add(y3, t1, y3); // |y3| ≤ 1.48 * 2^52
+    /* __ */  fe10_carry(x3);     // carry |x3| ≤ 1.01 * 2^21
+    /* __ */  fe10_carry(y3);     // carry |y3| ≤ 1.01 * 2^21
+    /* __ */  fe10_carry(z3);     // carry |z3| ≤ 1.01 * 2^21
+              fe10_mul(y3, x3, y3); // |y3| ≤ 1.01 * 2^21
+    /* 15 */  fe10_mul(x3, x3, t3); // |x3| ≤ 1.01 * 2^21
+              fe10_add(t3, t2, t2); // |t3| ≤ 1.01 * 2^22
+              fe10_add(t2, t2, t3); // |t3| ≤ 1.52 * 2^22
+              fe10_mul_b(z3, z3);   // |z3| ≤ 1.65 * 2^34
+              fe10_sub(z3, z3, t2); // |z3| ≤ 1.66 * 2^34
+    /* 20 */  fe10_sub(z3, z3, t0); // |z3| ≤ 1.69 * 2^49
+              fe10_add(t3, z3, z3); // |t3| ≤ 1.69 * 2^50
+              fe10_add(z3, z3, t3); // |z3| ≤ 1.27 * 2^51
+              fe10_add(t3, t0, t0); // |t3| ≤ 1.68 * 2^50
+              fe10_add(t0, t3, t0); // |t0| ≤ 1.26 * 2^51
+    /* 25 */  fe10_sub(t0, t0, t2); // |t0| ≤ 1.27 * 2^51
+    /* __ */  fe10_carry(t0);     // carry |t0| ≤ 1.01 * 2^21
+    /* __ */  fe10_carry(z3);     // carry |z3| ≤ 1.01 * 2^21
+              fe10_mul(t0, t0, z3); // |t0| ≤ 1.68 * 2^49
+              fe10_add(y3, y3, t0); // |y3| ≤ 1.69 * 2^49
+              fe10_mul(t0, y, z);   // |t0| ≤ 1.68 * 2^49
+              fe10_add(t0, t0, t0); // |t0| ≤ 1.68 * 2^50
+    /* __ */  fe10_carry(t0);     // carry |t0| ≤ 1.01 * 2^21
+    /* 30 */  fe10_mul(z3, t0, z3); // |z3| ≤ 1.68 * 2^50
+              fe10_sub(x3, x3, z3); // |x3| ≤ 1.69 * 2^50
+    /* __ */  fe10_carry(t0);     // carry |t0| ≤ 1.01 * 2^21
+    /* __ */  fe10_carry(t1);     // carry |t1| ≤ 1.01 * 2^21
+              fe10_mul(z3, t0, t1); // |z3| ≤ 1.68 * 2^49
+              fe10_add(z3, z3, z3); // |z3| ≤ 1.68 * 2^50
+              fe10_add(z3, z3, z3); // |z3| ≤ 1.68 * 2^51
+
+    // Squeeze x3 and z3, otherwise we will get into trouble during the next
+    // Addition/doubling
+    fe10_carry(x3);
+    fe10_carry(y3);
+    fe10_carry(z3);
+
+    fe10_copy(p3[0], x3);
+    fe10_copy(p3[1], y3);
+    fe10_copy(p3[2], z3);
+}
 
 void ge_add(ge p3, const ge p1, const ge p2)
 {
-    fe x1, y1, z1, x2, y2, z2, x3, y3, z3, t0, t1, t2, t3, t4, t5;
-    fe_copy(x1, p1[0]);
-    fe_copy(y1, p1[1]);
-    fe_copy(z1, p1[2]);
-    fe_copy(x2, p2[0]);
-    fe_copy(y2, p2[1]);
-    fe_copy(z2, p2[2]);
+    fe10 x1, y1, z1, x2, y2, z2, x3, y3, z3, t0, t1, t2, t3, t4, t5;
+    fe10_copy(x1, p1[0]);
+    fe10_copy(y1, p1[1]);
+    fe10_copy(z1, p1[2]);
+    fe10_copy(x2, p2[0]);
+    fe10_copy(y2, p2[1]);
+    fe10_copy(z2, p2[2]);
 
     /*
     A couple of times you will see me add 2*p twice. In this case I will be
@@ -25,55 +96,51 @@ void ge_add(ge p3, const ge p1, const ge p2)
     this should be implemented by adding 4*p in one go.
     */
     /*   #: Instruction number as mentioned in the paper */
-             fe_mul(t0, x1, x2);
-             fe_mul(t1, y1, y2);
-             fe_mul(t2, z1, z2);
-             fe_add(t3, x1, y1);
-    /*  5 */ fe_add(t4, x2, y2);
-             fe_copy(t5, t3); fe_mul(t3, t5, t4);
-             fe_add(t4, t0, t1);
-             fe_add2p(t3); fe_sub(t3, t3, t4);
-             fe_add(t4, y1, z1);
-    /* 10 */ fe_add(x3, y2, z2);
-             fe_copy(t5, t4); fe_mul(t4, t5, x3);
-             fe_add(x3, t1, t2);
-             fe_add4p(t4); fe_sub(t4, t4, x3);
-             fe_add(x3, x1, z1);
-    /* 15 */ fe_add(y3, x2, z2);
-             fe_copy(t5, x3); fe_mul(x3, t5, y3);
-             fe_add(y3, t0, t2);
-             fe_add2p(x3); fe_add2p(x3); fe_sub(y3, x3, y3);
-             fe_mul_b(z3, t2);
-    /* 20 */ fe_add2p(y3); fe_sub(x3, y3, z3);
-             fe_add(z3, x3, x3);
-             fe_add(x3, x3, z3); fe_carry(x3);
-             fe_add2p(t1); fe_sub(z3, t1, x3); fe_carry(t1); fe_carry(z3);
-             fe_add(x3, t1, x3);
-    /* 25 */ fe_mul_b(y3, y3);
-             fe_add(t1, t2, t2);
-             fe_add(t2, t1, t2); fe_carry(t2);
-             fe_add4p(y3); fe_sub(y3, y3, t2);
-             fe_sub(y3, y3, t0); fe_carry(y3);
-    /* 30 */ fe_add(t1, y3, y3);
-             fe_add(y3, t1, y3);
-             fe_add(t1, t0, t0);
-             fe_add(t0, t1, t0);
-             fe_add2p(t0); fe_sub(t0, t0, t2);
-    /* 35 */ fe_mul(t1, t4, y3);
-             fe_mul(t2, t0, y3);
-             fe_mul(y3, x3, z3);
-             fe_add(y3, y3, t2);
-             fe_copy(t5, x3); fe_mul(x3, t5, t3);
-    /* 40 */ fe_add2p(x3); fe_sub(x3, x3, t1); fe_carry(x3);
-             fe_copy(t5, z3); fe_mul(z3, t5, t4);
-             fe_mul(t1, t3, t0);
-             fe_add(z3, z3, t1);
+             fe10_mul(t0, x1, x2);
+             fe10_mul(t1, y1, y2);
+             fe10_mul(t2, z1, z2);
+             fe10_add(t3, x1, y1);
+    /*  5 */ fe10_add(t4, x2, y2);
+             fe10_copy(t5, t3); fe10_mul(t3, t5, t4);
+             fe10_add(t4, t0, t1);
+             fe10_add2p(t3); fe10_sub(t3, t3, t4);
+             fe10_add(t4, y1, z1);
+    /* 10 */ fe10_add(x3, y2, z2);
+             fe10_copy(t5, t4); fe10_mul(t4, t5, x3);
+             fe10_add(x3, t1, t2);
+             fe10_add4p(t4); fe10_sub(t4, t4, x3);
+             fe10_add(x3, x1, z1);
+    /* 15 */ fe10_add(y3, x2, z2);
+             fe10_copy(t5, x3); fe10_mul(x3, t5, y3);
+             fe10_add(y3, t0, t2);
+             fe10_add2p(x3); fe10_add2p(x3); fe10_sub(y3, x3, y3);
+             fe10_mul_b(z3, t2);
+    /* 20 */ fe10_add2p(y3); fe10_sub(x3, y3, z3);
+             fe10_add(z3, x3, x3);
+             fe10_add(x3, x3, z3); fe10_carry(x3);
+             fe10_add2p(t1); fe10_sub(z3, t1, x3); fe10_carry(t1); fe10_carry(z3);
+             fe10_add(x3, t1, x3);
+    /* 25 */ fe10_mul_b(y3, y3);
+             fe10_add(t1, t2, t2);
+             fe10_add(t2, t1, t2); fe10_carry(t2);
+             fe10_add4p(y3); fe10_sub(y3, y3, t2);
+             fe10_sub(y3, y3, t0); fe10_carry(y3);
+    /* 30 */ fe10_add(t1, y3, y3);
+             fe10_add(y3, t1, y3);
+             fe10_add(t1, t0, t0);
+             fe10_add(t0, t1, t0);
+             fe10_add2p(t0); fe10_sub(t0, t0, t2);
+    /* 35 */ fe10_mul(t1, t4, y3);
+             fe10_mul(t2, t0, y3);
+             fe10_mul(y3, x3, z3);
+             fe10_add(y3, y3, t2);
+             fe10_copy(t5, x3); fe10_mul(x3, t5, t3);
+    /* 40 */ fe10_add2p(x3); fe10_sub(x3, x3, t1); fe10_carry(x3);
+             fe10_copy(t5, z3); fe10_mul(z3, t5, t4);
+             fe10_mul(t1, t3, t0);
+             fe10_add(z3, z3, t1);
 
-    fe_copy(p3[0], x3);
-    fe_copy(p3[1], y3);
-    fe_copy(p3[2], z3);
-}
-
-void ge_double(ge out, const ge in) {
-
+    fe10_copy(p3[0], x3);
+    fe10_copy(p3[1], y3);
+    fe10_copy(p3[2], z3);
 }

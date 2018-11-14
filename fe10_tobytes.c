@@ -1,13 +1,13 @@
 /*
-Store a into a field element (fe) into a bytestring
+Store a into a field element (fe10) into a bytestring
 */
 
-#include "fe.h"
+#include "fe10.h"
 
-void fe_tobytes(uint8_t *s, fe z)
+void fe10_tobytes(uint8_t *s, fe10 z)
 {
     // Reduce x and y mod p
-    fe_reduce(z);
+    fe10_reduce(z);
 
     // Store the values to `s`
     s[ 0]  = z[0];

@@ -1,11 +1,11 @@
 /*
-Load a bytestring into a field element (fe)
+Load a bytestring into a field element (fe10)
 
 This file is adapted from the sandy2x implementation, which in turn notes:
-> This file is basically ref10/fe_frombytes.h.
+> This file is basically ref10/fe10_frombytes.h.
 */
 
-#include "fe.h"
+#include "fe10.h"
 
 static uint64_t load_3(const uint8_t *in)
 {
@@ -26,7 +26,7 @@ static uint64_t load_4(const uint8_t *in)
   return result;
 }
 
-void fe_frombytes(fe z, const uint8_t *s)
+void fe10_frombytes(fe10 z, const uint8_t *s)
 {
   uint64_t z0 = load_4(s);
   uint64_t z1 = load_3(s + 4) << 6;

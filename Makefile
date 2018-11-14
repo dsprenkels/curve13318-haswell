@@ -1,14 +1,15 @@
 CC = clang
 CFLAGS += -m64 -std=c99 -pedantic -Wall -Wshadow -Wpointer-arith -Wcast-qual \
           -Wstrict-prototypes -Wmissing-prototypes -fPIC -g -O3
-SRCS = fe.c \
-       fe_frombytes.c \
-       fe_tobytes.c \
-       ge.c \
-       ge_frombytes.c \
-       ge_tobytes.c \
-       scalarmult.c
-OBJS := ${SRCS:.c=.o}
+C_SRCS = fe10.c \
+         fe10_frombytes.c \
+         fe10_tobytes.c \
+         ge.c \
+         ge_frombytes.c \
+         ge_tobytes.c \
+         scalarmult.c
+ASM_SCRS =
+OBJS := ${ASM_SRCS:.c=.o} ${C_SRCS:.c=.o}
 
 all: libcurve13318.so
 
@@ -20,8 +21,17 @@ debug: debug.c $(OBJS)
 
 .PHONY: check
 check: libcurve13318.so
-	sage -python test_all.py -v
+	sage -python test_all.py -v $(TESTNAME)
 
 .PHONY: clean
 clean:
 	$(RM) *.o *.gch *.a *.out *.so
+
+%.d: %.asm
+	$(NASM) -MT $(patsubst %.d,%.o,$@) -M $< >$@
+
+%.d: %.c
+	$(CC) $(CFLAGS) -M $< >$@
+
+include $(ASM_SCRS:%.asm=%.d)
+include $(C_SRCS:%.c=%.d)

@@ -6,22 +6,22 @@ static bool ge_affine_point_on_curve(ge p)
     // Use the general curve equation to check if this point is on the curve
     // y^2 = x^3 - 3*x + 13318
     uint64_t nonzero = 0;
-    fe lhs, rhs, t0;
-    fe_square(lhs, p[1]);  // y^2
-    fe_square(t0, p[0]);   // x^2
-    fe_mul(rhs, t0, p[0]); // x^3
-    fe_zero(t0);           // 0
-    fe_add2p(t0);          // 0
-    fe_sub(t0, t0, p[0]);  // -x
-    fe_add(rhs, rhs, t0);  // x^3 - x
-    fe_add(rhs, rhs, t0);  // x^3 - 2*x
-    fe_add(rhs, rhs, t0);  // x^3 - 3*x
-    fe_add_b(rhs);         // x^3 - 3*x + 13318
-    fe_carry(rhs);
-    fe_add2p(lhs);         // Still y^2
-    fe_sub(lhs, lhs, rhs); // (==0) or (!=0) mod p
-    fe_carry(lhs);
-    fe_reduce(lhs);        // 0 or !0
+    fe10 lhs, rhs, t0;
+    fe10_square(lhs, p[1]);  // y^2
+    fe10_square(t0, p[0]);   // x^2
+    fe10_mul(rhs, t0, p[0]); // x^3
+    fe10_zero(t0);           // 0
+    fe10_add2p(t0);          // 0
+    fe10_sub(t0, t0, p[0]);  // -x
+    fe10_add(rhs, rhs, t0);  // x^3 - x
+    fe10_add(rhs, rhs, t0);  // x^3 - 2*x
+    fe10_add(rhs, rhs, t0);  // x^3 - 3*x
+    fe10_add_b(rhs);         // x^3 - 3*x + 13318
+    fe10_carry(rhs);
+    fe10_add2p(lhs);         // Still y^2
+    fe10_sub(lhs, lhs, rhs); // (==0) or (!=0) mod p
+    fe10_carry(lhs);
+    fe10_reduce(lhs);        // 0 or !0
 
     for (unsigned int i = 0; i < 10; i++) nonzero |= lhs[i];
     return nonzero == 0;
@@ -29,8 +29,8 @@ static bool ge_affine_point_on_curve(ge p)
 
 int ge_frombytes(ge p, const uint8_t *s)
 {
-    fe_frombytes(p[0], &s[0]);
-    fe_frombytes(p[1], &s[32]);
+    fe10_frombytes(p[0], &s[0]);
+    fe10_frombytes(p[1], &s[32]);
 
     // Handle point at infinity encoded by (0, 0)
     uint64_t infinity = 1;
