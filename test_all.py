@@ -46,17 +46,21 @@ ge_frombytes = curve13318.crypto_scalarmult_curve13318_avx2_ge_frombytes
 ge_frombytes.argtypes = [ctypes.c_uint64 * 30, ctypes.c_ubyte * 64]
 ge_tobytes = curve13318.crypto_scalarmult_curve13318_avx2_ge_tobytes
 ge_tobytes.argtypes = [ctypes.c_ubyte * 64, ctypes.c_uint64 * 30]
+# ge_double = curve13318.crypto_scalarmult_curve13318_avx2_ge_double
+# ge_double.argtypes = [ctypes.c_uint64 * 30] * 2
 ge_add = curve13318.crypto_scalarmult_curve13318_avx2_ge_add
 ge_add.argtypes = [ctypes.c_uint64 * 30] * 3
 
 
-class TestFE(unittest.TestCase):
-    def setUp(self):
-        F = FiniteField(P)
-
+class TestFE10(unittest.TestCase):
+    @given(st.lists(st.integers(0, 2**63 - 1), min_size=10, max_size=10))
+    def test_identity(self, limbs):
+        fe10 = make_fe10(limbs)
+        self.assertEqual(fe10_val(fe10), fe10_val(limbs))
+    
     @staticmethod
     def frombytes(bytelist):
-        h = make_fe10()
+        h = make_fe10([])
         c_bytes = (ctypes.c_ubyte * 32)(0)
 
         fe10_value = 0
@@ -112,7 +116,7 @@ class TestFE(unittest.TestCase):
         f, f_val = self.frombytes(bytelists[0])
         g, g_val = self.frombytes(bytelists[1])
         expected = F(f_val * g_val)
-        h = make_fe10()
+        h = make_fe10([])
         fe10_mul(h, f, g)
         actual = F(fe10_val(h))
         self.assertEqual(actual, expected)
@@ -121,7 +125,7 @@ class TestFE(unittest.TestCase):
     def test_square(self, bytelist):
         f, f_val = self.frombytes(bytelist)
         expected = F(f_val**2)
-        h = make_fe10()
+        h = make_fe10([])
         fe10_square(h, f)
         actual = F(fe10_val(h))
         self.assertEqual(actual, expected)
@@ -139,18 +143,18 @@ class TestFE(unittest.TestCase):
     def test_invert(self, bytelist):
         f, f_val = self.frombytes(bytelist)
         expected = F(f_val)**-1 if f_val != 0 else 0
-        h = make_fe10()
+        h = make_fe10([])
         fe10_invert(h, f)
         actual = F(fe10_val(h))
         self.assertEqual(actual, expected)
 
-    @given(st.lists(st.integers(0, 2**63 - 1), min_size=10, max_size=10))
     # Value that that is in [p, 2^255⟩
     @example([2**26 -19, 2**25 - 1, 2**26 - 1, 2**25 - 1, 2**26 - 1,
               2**25 - 1, 2**26 - 1, 2**25 - 1, 2**26 - 1, 2**25 - 1 ])
     # Value that that is in [2*p, 2^256⟩
     @example([2**26 -38, 2**25 - 1, 2**26 - 1, 2**25 - 1, 2**26 - 1,
               2**25 - 1, 2**26 - 1, 2**25 - 1, 2**26 - 1, 2**26 - 1 ])
+    @given(st.lists(st.integers(0, 2**63 - 1), min_size=10, max_size=10))
     def test_reduce(self, limbs):
         f = make_fe10(limbs)
         expected = F(fe10_val(f))
@@ -159,10 +163,20 @@ class TestFE(unittest.TestCase):
         actual = fe10_val(f)
         self.assertEqual(actual, expected)
 
+class TestFE10x4(unittest.TestCase):
+    @given(st.lists(st.integers(0, 2**63 - 1), min_size=10, max_size=10), st.integers(0, 3))
+    def test_identity(self, limbs, lane):
+        fe10 = make_fe10x4(limbs, lane)
+        self.assertEqual(fe10x4_val(fe10, lane), fe10_val(limbs))
+    
+    @unittest.skip('unimplemented')
+    @given(st.lists(st.integers(0, 2**63 - 1), min_size=10, max_size=10), st.integers(0, 3))
+    def test_carry(self, limbs, lane):
+        raise NotImplementedError()
 
 class TestGE(unittest.TestCase):
     @staticmethod
-    def encode_point(x, y, z):
+    def encode_ge(x, y, z):
         """Encode a point in its C representation"""
         shift = 0
         x_limbs, y_limbs, z_limbs = [0]*10, [0]*10, [0]*10
@@ -178,13 +192,15 @@ class TestGE(unittest.TestCase):
             p[i] = limb
         return p
 
-    def decode_point(self, point):
+    @staticmethod
+    def decode_ge(point):
         x = fe10_val(point[ 0:10])
         y = fe10_val(point[10:20])
         z = fe10_val(point[20:30])
         return (x, y, z)
 
-    def decode_bytes(self, c_bytes):
+    @staticmethod
+    def decode_bytes(c_bytes):
         x, y = F(0), F(0)
         for i, b in enumerate(c_bytes[0:32]):
             x += b * 2**(8*i)
@@ -192,7 +208,8 @@ class TestGE(unittest.TestCase):
             y += b * 2**(8*i)
         return x, y
 
-    def point_to_bytes(self, x, y):
+    @staticmethod
+    def ge_to_bytes(x, y):
         """Encode the numbers as byte input"""
         # Encode the numbers as byte input
         c_bytes = (ctypes.c_ubyte * 64)(0)
@@ -224,23 +241,36 @@ class TestGE(unittest.TestCase):
                 z = F(1)
                 expected = -1
 
-        c_bytes = self.point_to_bytes(x.lift(), y.lift())
+        c_bytes = self.ge_to_bytes(x.lift(), y.lift())
         c_point = (ctypes.c_uint64 * 30)(0)
         ret = ge_frombytes(c_point, c_bytes)
-        actual_x, actual_y, actual_z = self.decode_point(c_point)
+        actual_x, actual_y, actual_z = self.decode_ge(c_point)
         self.assertEqual(ret, expected)
         self.assertEqual(fe10_val(c_point[ 0:10]), x)
         self.assertEqual(fe10_val(c_point[10:20]), expected_y)
         self.assertEqual(fe10_val(c_point[20:30]), z)
 
-    @given(st.integers(0, 2**256 - 1), st.integers(0, 2**256 - 1),
-           st.sampled_from([1, -1]))
     @example(0, 0, 1) # a point at infinity
     @example(0, P, 1)
     @example(0, 2*P, 1)
+    @given(st.integers(0, 2**256 - 1), st.integers(0, 2**256 - 1),
+           st.sampled_from([1, -1]))
+    def test_identity(self, x, z, sign):
+        (x, y, z), point = make_ge(x, z, sign)
+        c_point = self.encode_ge(x, y, z)
+        x2, y2, z2 = self.decode_ge(c_point)
+        self.assertEqual(x, x2)
+        self.assertEqual(y, y2)
+        self.assertEqual(z, z2)
+
+    @example(0, 0, 1) # a point at infinity
+    @example(0, P, 1)
+    @example(0, 2*P, 1)
+    @given(st.integers(0, 2**256 - 1), st.integers(0, 2**256 - 1),
+           st.sampled_from([1, -1]))
     def test_tobytes(self, x, z, sign):
         (x, y, z), point = make_ge(x, z, sign)
-        c_point = self.encode_point(x, y, z)
+        c_point = self.encode_ge(x, y, z)
         c_bytes = (ctypes.c_ubyte * 64)(0)
         ge_tobytes(c_bytes, c_point)
 
@@ -253,18 +283,68 @@ class TestGE(unittest.TestCase):
         self.assertEqual(actual_x, expected_x)
         self.assertEqual(actual_y, expected_y)
 
+    @unittest.skip('unimplemented')
+    @example(0, 0, 1, 0, 0, 1)
+    @example(0, 1, 1, 0, 0, 1)
+    @example(0, 1, -1, 0, 0, 1)
+    @given(st.integers(0, 2**256 - 1), st.integers(0, 2**256 - 1), st.sampled_from([1, -1]))
+    @settings(suppress_health_check=[HealthCheck.filter_too_much])
+    def test_double(self, x, z, sign):
+        (x, y, z), point = make_ge(x, z, sign)
+        c_point = self.encode_ge(x, y, z)
+        c_point3 = (ctypes.c_uint64 * 30)(0)
+        ge_double(c_point3, c_point)
+        x3, y3, z3 = self.decode_ge(c_point3)
+        expected = 2*point
+        note("Expected: {}".format(expected))
+        note("Actual: ({} : {} : {})".format(x3, y3, z3))
+        if expected == E(0):
+            self.assertEqual(F(z3), 0)
+            return
+        actual = E([F(x3), F(y3), F(z3)])
+        self.assertEqual(actual, expected)
+
+    @example(0, 0, 1)
+    @example(0, 1, 1)
+    @example(0, 1, -1)
+    @given(st.integers(0, 2**256 - 1), st.integers(0, 2**256 - 1),
+           st.sampled_from([1, -1]))
+    @settings(suppress_health_check=[HealthCheck.filter_too_much])
+    def test_double_ref(self, x, z, sign):
+        (x, y, z), point = make_ge(x, z, sign)
+        note("testing: 2*{}".format(point))
+        note("locals(): {}".format(locals()))
+        x, y, z = F(x), F(y), F(z)
+        b = 13318
+        t0 =  x *  x;       t1 =  y *  y;       t2 =  z *  z
+        t3 =  x *  y;       t3 = t3 + t3;       z3 =  x *  z
+        z3 = z3 + z3;       y3 =  b * t2;       y3 = y3 - z3
+        x3 = y3 + y3;       y3 = x3 + y3;       x3 = t1 - y3
+        y3 = t1 + y3;       y3 = x3 * y3;       x3 = x3 * t3
+        t3 = t2 + t2;       t2 = t2 + t3;       z3 =  b * z3
+        z3 = z3 - t2;       z3 = z3 - t0;       t3 = z3 + z3
+        z3 = z3 + t3;       t3 = t0 + t0;       t0 = t3 + t0
+        t0 = t0 - t2;       t0 = t0 * z3;       y3 = y3 + t0
+        t0 =  y *  z;       t0 = t0 + t0;       z3 = t0 * z3
+        x3 = x3 - z3;       z3 = t0 * t1;       z3 = z3 + z3
+        z3 = z3 + z3;
+        self.assertEqual(E([x3, y3, z3]), 2*point)
+
+    @example(0, 0, 1, 0, 0, 1)
+    @example(0, 1, 1, 0, 0, 1)
+    @example(0, 1, -1, 0, 0, 1)
     @given(st.integers(0, 2**256 - 1), st.integers(0, 2**256 - 1),
            st.sampled_from([1, -1]),   st.integers(0, 2**256 - 1),
            st.integers(0, 2**256 - 1), st.sampled_from([1, -1]))
-    @example(0, 0, 1, 0, 0, 1)
+    @settings(suppress_health_check=[HealthCheck.filter_too_much])
     def test_add(self, x1, z1, sign1, x2, z2, sign2):
         (x1, y1, z1), point1 = make_ge(x1, z1, sign1)
         (x2, y2, z2), point2 = make_ge(x2, z2, sign2)
-        c_point1 = self.encode_point(x1, y1, z1)
-        c_point2 = self.encode_point(x2, y2, z2)
+        c_point1 = self.encode_ge(x1, y1, z1)
+        c_point2 = self.encode_ge(x2, y2, z2)
         c_point3 = (ctypes.c_uint64 * 30)(0)
         ge_add(c_point3, c_point1, c_point2)
-        x3, y3, z3 = self.decode_point(c_point3)
+        x3, y3, z3 = self.decode_ge(c_point3)
         expected = point1 + point2
         note("Expected: {}".format(expected))
         note("Actual: ({} : {} : {})".format(x3, y3, z3))
@@ -274,14 +354,12 @@ class TestGE(unittest.TestCase):
         actual = E([F(x3), F(y3), F(z3)])
         self.assertEqual(actual, expected)
 
-
-    @given(st.integers(0, 2**256 - 1), st.integers(0, 2**256 - 1),
-           st.sampled_from([1, -1]),   st.integers(0, 2**256 - 1),
-           st.integers(0, 2**256 - 1), st.sampled_from([1, -1]))
     @example(0, 0, 1, 0, 0, 1)
     @example(0, 1, 1, 0, 0, 1)
     @example(0, 1, -1, 0, 0, 1)
-    @example(5, 26250914708855074711006248540861075732027942443063102939584266239L, 1)
+    @given(st.integers(0, 2**256 - 1), st.integers(0, 2**256 - 1),
+            st.sampled_from([1, -1]),   st.integers(0, 2**256 - 1),
+            st.integers(0, 2**256 - 1), st.sampled_from([1, -1]))
     @settings(suppress_health_check=[HealthCheck.filter_too_much])
     def test_add_ref(self, x1, z1, sign1, x2, z2, sign2):
         (x1, y1, z1), point1 = make_ge(x1, z1, sign1)
@@ -308,62 +386,19 @@ class TestGE(unittest.TestCase):
         z3 = z3 + t1
         self.assertEqual(E([x3, y3, z3]), point1 + point2)
 
-    @example(0, 0, 1)
-    @example(0, 1, 1)
-    @example(0, 1, -1)
-    @example(5, 26250914708855074711006248540861075732027942443063102939584266239L, 1)
-    @given(st.integers(0, 2**256 - 1), st.integers(0, 2**256 - 1),
-           st.sampled_from([1, -1]))
-    @settings(suppress_health_check=[HealthCheck.filter_too_much])
-    def test_double_ref(self, x, z, sign):
-        (x, y, z), point = make_ge(x, z, sign)
-        note("testing: 2*{}".format(point))
-        note("locals(): {}".format(locals()))
-        x, y, z = F(x), F(y), F(z)
-        b = 13318
-        t0 =  x *  x;       t1 =  y *  y;       t2 =  z *  z
-        t3 =  x *  y;       t3 = t3 + t3;       z3 =  x *  z
-        z3 = z3 + z3;       y3 =  b * t2;       y3 = y3 - z3
-        x3 = y3 + y3;       y3 = x3 + y3;       x3 = t1 - y3
-        y3 = t1 + y3;       y3 = x3 * y3;       x3 = x3 * t3
-        t3 = t2 + t2;       t2 = t2 + t3;       z3 =  b * z3
-        z3 = z3 - t2;       z3 = z3 - t0;       t3 = z3 + z3
-        z3 = z3 + t3;       t3 = t0 + t0;       t0 = t3 + t0
-        t0 = t0 - t2;       t0 = t0 * z3;       y3 = y3 + t0
-        t0 =  y *  z;       t0 = t0 + t0;       z3 = t0 * z3
-        x3 = x3 - z3;       z3 = t0 * t1;       z3 = z3 + z3
-        z3 = z3 + z3;
-        self.assertEqual(E([x3, y3, z3]), 2*point)
-
-    @given(st.integers(0, 2**256 - 1), st.integers(0, 2**256 - 1),
-           st.sampled_from([1, -1]),   st.integers(0, 2**256 - 1),
-           st.integers(0, 2**256 - 1), st.sampled_from([1, -1]))
-    @example(0, 0, 1, 0, 0, 1)
-    def test_add_ref(self, x1, z1, sign1, x2, z2, sign2):
-        (x1, y1, z1), point1 = make_ge(x1, z1, sign1)
-        (x2, y2, z2), point2 = make_ge(x2, z2, sign2)
-        note("testing: {} + {}".format(point1, point2))
-        note("locals(): {}".format(locals()))
-        x1, y1, z1 = F(x1), F(y1), F(z1)
-        x2, y2, z2 = F(x2), F(y2), F(z2)
-        b = 13318
-        t0 = x1 * x2;        t1 = y1 * y2;        t2 = z1 * z2
-        t3 = x1 + y1;        t4 = x2 + y2;        t3 = t3 * t4
-        t4 = t0 + t1;        t3 = t3 - t4;        t4 = y1 + z1
-        x3 = y2 + z2;        t4 = t4 * x3;        x3 = t1 + t2
-        t4 = t4 - x3;        x3 = x1 + z1;        y3 = x2 + z2
-        x3 = x3 * y3;        y3 = t0 + t2;        y3 = x3 - y3
-        z3 =  b * t2;        x3 = y3 - z3;        z3 = x3 + x3
-        x3 = x3 + z3;        z3 = t1 - x3;        x3 = t1 + x3
-        y3 =  b * y3;        t1 = t2 + t2;        t2 = t1 + t2
-        y3 = y3 - t2;        y3 = y3 - t0;        t1 = y3 + y3
-        y3 = t1 + y3;        t1 = t0 + t0;        t0 = t1 + t0
-        t0 = t0 - t2;        t1 = t4 * y3;        t2 = t0 * y3
-        y3 = x3 * z3;        y3 = y3 + t2;        x3 = x3 * t3
-        x3 = x3 - t1;        z3 = z3 * t4;        t1 = t3 * t0
-        z3 = z3 + t1
-        self.assertEqual(E([x3, y3, z3]), point1 + point2)
-
+def make_fe10(limbs):
+    h = (ctypes.c_uint64 * 10)(0)
+    for i, limb in enumerate(limbs):
+        h[i] = limb
+    return h
+    
+def fe10_val(h):
+    val = 0
+    exponent = 0
+    for i, limb in enumerate(h):
+        val += limb * 2**exponent
+        exponent += 26 if i % 2 == 0 else 25
+    return val
 
 def fe10_dumps(h):
     s = ''
@@ -374,19 +409,21 @@ def fe10_dumps(h):
     s += "{}".format(h[0])
     return s
 
-def fe10_val(h):
-    val = 0
-    exponent = 0
-    for i, limb in enumerate(h):
-        val += limb * 2**exponent
-        exponent += 26 if i % 2 == 0 else 25
-    return val
+def make_fe10x4(limbs, lane):
+    assert 0 <= lane < 4
+    z = make_fe10(limbs)
+    stashed = []
+    vz = (ctypes.c_uint64 * 40)(0)
+    while ctypes.addressof(vz) % 32 != 0:
+        # Try until we have a properly aligned array
+        stashed.append(vz) # save the old one or else Python is going to be smart on us
+        vz = (ctypes.c_uint64 * 40)(0)
+    for i, limb in enumerate(z):
+        vz[4*i + lane] = limb
+    return vz
 
-def make_fe10(initial_value=[]):
-    h = (ctypes.c_uint64 * 10)(0)
-    for i, limb in enumerate(initial_value):
-        h[i] = limb
-    return h
+def fe10x4_val(vz, lane):
+    return fe10_val(vz[lane::4])
 
 def make_ge(x, z, sign):
     if z != 0:
