@@ -51,6 +51,9 @@ ge_tobytes.argtypes = [ctypes.c_ubyte * 64, ctypes.c_uint64 * 30]
 ge_add = curve13318.crypto_scalarmult_curve13318_avx2_ge_add
 ge_add.argtypes = [ctypes.c_uint64 * 30] * 3
 
+fe10x4_carry = curve13318.crypto_scalarmult_curve13318_avx2_fe10x4_carry
+fe10x4_carry.argtypes = [ctypes.c_uint64 * 40]
+
 
 class TestFE10(unittest.TestCase):
     @given(st.lists(st.integers(0, 2**63 - 1), min_size=10, max_size=10))
@@ -169,10 +172,21 @@ class TestFE10x4(unittest.TestCase):
         fe10 = make_fe10x4(limbs, lane)
         self.assertEqual(fe10x4_val(fe10, lane), fe10_val(limbs))
     
-    @unittest.skip('unimplemented')
     @given(st.lists(st.integers(0, 2**63 - 1), min_size=10, max_size=10), st.integers(0, 3))
     def test_carry(self, limbs, lane):
-        raise NotImplementedError()
+        vz = make_fe10x4(limbs, lane)
+        note("carry got:      {}".format([hex(x) for x in vz[lane::4]]))
+        fe10x4_carry(vz)
+        actual = fe10x4_val(vz, lane)
+        expected = fe10_val(limbs)
+        note("carry returned: {}".format([hex(x) for x in vz[lane::4]]))
+        note("actual value:   0x{:32X}".format(actual))
+        note("expected value: 0x{:32X}".format(expected))
+        self.assertEqual(F(actual), F(expected))
+        for i, x in list(enumerate(vz[lane::4]))[0::1]:
+            assert(0 <= x <= 1.01 * 2**26), "limb {} out of bounds: 0x{:X}".format(i, x)
+        for i, x in list(enumerate(vz[lane::4]))[1::1]:
+            assert(0 <= x <= 1.01 * 2**26), "limb {} out of bounds: 0x{:X}".format(i, x)
 
 class TestGE(unittest.TestCase):
     @staticmethod

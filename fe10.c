@@ -258,6 +258,9 @@ void fe10_reduce(fe10 z)
 
     Instead of differentiating between these two conditionals we will perform
     a conditional reduction by `p` twice.
+
+    TODO(dsprenkels) Implement this function using radix 2^51
+    TODO(dsprenkels) Optimize carry ripple
     */
     uint64_t t, carry19, carry38, do_reduce;
 
