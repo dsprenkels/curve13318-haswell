@@ -5,8 +5,10 @@
 
 static const uint64_t CURVE13318_B = 13318;
 
-static const uint64_t MASK25 = 0xFFFFFFFFFE000000;
-static const uint64_t MASK26 = 0xFFFFFFFFFC000000;
+static const uint64_t _MASK25 = 0x1FFFFFF;
+static const uint64_t _MASK26 = 0x3FFFFFF;
+static const uint64_t _REDMASK25 = 0xFFFFFFFFFE000000;
+static const uint64_t _REDMASK26 = 0xFFFFFFFFFC000000;
 
 static const uint64_t _2P0 = 0x07FFFFDA;
 static const uint64_t _2PRestB25 = 0x03FFFFFE;

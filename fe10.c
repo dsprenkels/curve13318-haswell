@@ -151,50 +151,31 @@ void fe10_carry(fe10 z)
     //
     // Precondition:
     //   - *Every* limb in `z` must be (strictly) less than 2^63
-
-    uint64_t t;
-    t = z[0] & MASK26; // Round 1a
-    z[0] ^= t;
-    z[1] += t >> 26;
-    t = z[5] & MASK25; // Round 1b
-    z[5] ^= t;
-    z[6] += t >> 25;
-    t = z[1] & MASK25; // Round 2a
-    z[1] ^= t;
-    z[2] += t >> 25;
-    t = z[6] & MASK26; // Round 2b
-    z[6] ^= t;
-    z[7] += t >> 26;
-    t = z[2] & MASK26; // Round 3a
-    z[2] ^= t;
-    z[3] += t >> 26;
-    t = z[7] & MASK25; // Round 3b
-    z[7] ^= t;
-    z[8] += t >> 25;
-    t = z[3] & MASK25; // Round 4a
-    z[3] ^= t;
-    z[4] += t >> 25;
-    t = z[8] & MASK26; // Round 4b
-    z[8] ^= t;
-    z[9] += t >> 26;
-    t = z[4] & MASK26; // Round 5a
-    z[4] ^= t;
-    z[5] += t >> 26;
-    t = z[9] & MASK25; // Round 5b
-    z[9] ^= t;
-    z[0] += 19 * (t >> 25);
-    t = z[5] & MASK25; // Round 6a
-    z[5] ^= t;
-    z[6] += t >> 25;
-    t = z[0] & MASK26; // Round 6b
-    z[0] ^= t;
-    z[1] += t >> 26;
-    t = z[6] & MASK26; // Round 7a
-    z[6] ^= t;
-    z[7] += t >> 26;
-    t = z[1] & MASK25; // Round 7b :)
-    z[1] ^= t;
-    z[2] += t >> 25;
+    //
+    z[1] += z[0] >> 26;         // Round 1a
+    z[0] &= _MASK26;
+    z[6] += z[5] >> 25;         // Round 1b
+    z[5] &= _MASK25;
+    z[2] += z[1] >> 25;         // Round 2a
+    z[1] &= _MASK25;
+    z[7] += z[6] >> 26;         // Round 2b
+    z[6] &= _MASK26;
+    z[3] += z[2] >> 26;         // Round 3a
+    z[2] &= _MASK26;
+    z[8] += z[7] >> 25;         // Round 3b
+    z[7] &= _MASK25;
+    z[4] += z[3] >> 25;         // Round 4a
+    z[3] &= _MASK25;
+    z[9] += z[8] >> 26;         // Round 4b
+    z[8] &= _MASK26;
+    z[5] += z[4] >> 26;         // Round 5a
+    z[4] &= _MASK26;
+    z[0] += 19 * (z[9] >> 25);  // Round 5b
+    z[9] &= _MASK25;
+    z[6] += z[5] >> 25;         // Round 6a
+    z[5] &= _MASK25;
+    z[1] += z[0] >> 26;         // Round 6b
+    z[0] &= _MASK26;
 }
 
 void fe10_invert(fe10 out, const fe10 z)
@@ -335,33 +316,33 @@ void fe10_reduce(fe10 z)
 
     // In constract to `fe10_carry`, this function needs to carry the elements
     // `z` modulo `2^256`, i.e. *not* modulo `p`.
-    t = z[0] & MASK26;
+    t = z[0] & _REDMASK26;
     z[0] ^= t;
     z[1] += t >> 26;
-    t = z[1] & MASK25;
+    t = z[1] & _REDMASK25;
     z[1] ^= t;
     z[2] += t >> 25;
-    t = z[2] & MASK26;
+    t = z[2] & _REDMASK26;
     z[2] ^= t;
     z[3] += t >> 26;
-    t = z[3] & MASK25;
+    t = z[3] & _REDMASK25;
     z[3] ^= t;
     z[4] += t >> 25;
-    t = z[4] & MASK26;
+    t = z[4] & _REDMASK26;
     z[4] ^= t;
     z[5] += t >> 26;
-    t = z[5] & MASK25;
+    t = z[5] & _REDMASK25;
     z[5] ^= t;
     z[6] += t >> 25;
-    t = z[6] & MASK26;
+    t = z[6] & _REDMASK26;
     z[6] ^= t;
     z[7] += t >> 26;
-    t = z[7] & MASK25;
+    t = z[7] & _REDMASK25;
     z[7] ^= t;
     z[8] += t >> 25;
-    t = z[8] & MASK26;
+    t = z[8] & _REDMASK26;
     z[8] ^= t;
     z[9] += t >> 26;
-    t = z[9] & MASK26;
+    t = z[9] & _REDMASK26;
     z[9] ^= t;
 }
