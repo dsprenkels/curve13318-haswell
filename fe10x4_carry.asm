@@ -39,36 +39,36 @@
     ; - Ripple a: h0 -> h1 -> h2 -> h3 -> h4 -> h5 -> h6
     ; - Ripple b: h5 -> h6 -> h7 -> h8 -> h9 -> h0 -> h1
     ;
-    vpsrlq ymm15, ymm0, 26       ; Round 1a
+    vpsrlq ymm15, ymm0, 26      ; Round 1a
     vpaddq ymm1, ymm1, ymm15
     vmovdqa ymm13, yword [rel .MASK26]
     vpand ymm0, ymm0, ymm13
-    vpsrlq ymm15, ymm5, 25       ; Round 1b
+    vpsrlq ymm15, ymm5, 25      ; Round 1b
     vpaddq ymm6, ymm6, ymm15
     vmovdqa ymm12, yword [rel .MASK25]
     vpand ymm5, ymm5, ymm12
-    vpsrlq ymm15, ymm1, 25       ; Round 2a
+    vpsrlq ymm15, ymm1, 25      ; Round 2a
     vpaddq ymm2, ymm2, ymm15
     vpand ymm1, ymm1, ymm12
-    vpsrlq ymm15, ymm6, 26       ; Round 2b
+    vpsrlq ymm15, ymm6, 26      ; Round 2b
     vpaddq ymm7, ymm7, ymm15
     vpand ymm6, ymm6, ymm13
-    vpsrlq ymm15, ymm2, 26       ; Round 3a
+    vpsrlq ymm15, ymm2, 26      ; Round 3a
     vpaddq ymm3, ymm3, ymm15
     vpand ymm2, ymm2, ymm13
-    vpsrlq ymm15, ymm7, 25       ; Round 3b
+    vpsrlq ymm15, ymm7, 25      ; Round 3b
     vpaddq ymm8, ymm8, ymm15
     vpand ymm7, ymm7, ymm12
-    vpsrlq ymm15, ymm3, 25       ; Round 4a
+    vpsrlq ymm15, ymm3, 25      ; Round 4a
     vpaddq ymm4, ymm4, ymm15
     vpand ymm3, ymm3, ymm12
-    vpsrlq ymm15, ymm8, 26       ; Round 4b
+    vpsrlq ymm15, ymm8, 26      ; Round 4b
     vpaddq ymm9, ymm9, ymm15
     vpand ymm8, ymm8, ymm13
-    vpsrlq ymm15, ymm4, 26       ; Round 5a
+    vpsrlq ymm15, ymm4, 26      ; Round 5a
     vpaddq ymm5, ymm5, ymm15
     vpand ymm4, ymm4, ymm13
-    vpsrlq ymm15, ymm9, 25       ; Round 5b
+    vpsrlq ymm15, ymm9, 25      ; Round 5b
     vpsllq ymm14, ymm15, 4
     vpaddq ymm0, ymm0, ymm14
     vpaddq ymm14, ymm15, ymm15
