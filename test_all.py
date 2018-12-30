@@ -142,10 +142,12 @@ class TestFE10(unittest.TestCase):
         assert(actual < 2**256)
         self.assertEqual(F(actual), expected)
 
+    @example([218, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+              255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255])
     @given(st.lists(st.integers(0, 255), min_size=32, max_size=32))
     def test_invert(self, bytelist):
         f, f_val = self.frombytes(bytelist)
-        expected = F(f_val)**-1 if f_val != 0 else 0
+        expected = F(f_val)**-1 if F(f_val) != 0 else 0
         h = make_fe10([])
         fe10_invert(h, f)
         actual = F(fe10_val(h))
