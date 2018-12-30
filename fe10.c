@@ -2,8 +2,12 @@
 #include "fe10.h"
 #include <inttypes.h>
 
-void fe10_mul(fe10 h, const fe10 f, const fe10 g)
+void fe10_mul(fe10 h, const fe10 f_orig, const fe10 g_orig)
 {
+    fe10 f, g;
+    for (unsigned int i = 0; i < 10; i++) f[i] = f_orig[i];
+    for (unsigned int i = 0; i < 10; i++) g[i] = g_orig[i];
+
     // Precompute (19*g_1, ..., 19*g_9)
     const uint64_t g19_1 = 19*g[1];
     const uint64_t g19_2 = 19*g[2];

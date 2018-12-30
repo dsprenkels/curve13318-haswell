@@ -46,8 +46,8 @@ ge_frombytes = curve13318.crypto_scalarmult_curve13318_avx2_ge_frombytes
 ge_frombytes.argtypes = [ctypes.c_uint64 * 30, ctypes.c_ubyte * 64]
 ge_tobytes = curve13318.crypto_scalarmult_curve13318_avx2_ge_tobytes
 ge_tobytes.argtypes = [ctypes.c_ubyte * 64, ctypes.c_uint64 * 30]
-# ge_double = curve13318.crypto_scalarmult_curve13318_avx2_ge_double
-# ge_double.argtypes = [ctypes.c_uint64 * 30] * 2
+ge_double = curve13318.crypto_scalarmult_curve13318_avx2_ge_double
+ge_double.argtypes = [ctypes.c_uint64 * 30] * 2
 ge_add = curve13318.crypto_scalarmult_curve13318_avx2_ge_add
 ge_add.argtypes = [ctypes.c_uint64 * 30] * 3
 
@@ -297,10 +297,9 @@ class TestGE(unittest.TestCase):
         self.assertEqual(actual_x, expected_x)
         self.assertEqual(actual_y, expected_y)
 
-    @unittest.skip('unimplemented')
-    @example(0, 0, 1, 0, 0, 1)
-    @example(0, 1, 1, 0, 0, 1)
-    @example(0, 1, -1, 0, 0, 1)
+    @example(0, 0, 1)
+    @example(0, 1, 1)
+    @example(0, 1, -1)
     @given(st.integers(0, 2**256 - 1), st.integers(0, 2**256 - 1), st.sampled_from([1, -1]))
     @settings(suppress_health_check=[HealthCheck.filter_too_much])
     def test_double(self, x, z, sign):
