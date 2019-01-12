@@ -104,12 +104,13 @@ crypto_scalarmult_curve13318_avx2_fe10x4_mul_asm:
     ; round 3/10
     vmovdqa ymm15, yword [rsi + 2*32]        ; load f[2]
     vmovdqa ymm12, yword [rdx + 8*32]        ;  1*g[8] 
-    vpaddq ymm10, ymm12, ymm12              ;  2*g[8]
-    vpaddq ymm12, ymm10, ymm12              ;  3*g[8]
-    vpaddq ymm10, ymm10, ymm10              ;  4*g[8]
-    vpaddq ymm10, ymm10, ymm10              ;  8*g[8]
-    vpaddq ymm10, ymm10, ymm10              ; 16*g[8]
-    vpaddq ymm12, ymm10, ymm12              ; compute 19*g[8]
+    vpmuludq ymm12, ymm12, yword [rel .const_19]    ; compute 19*g[8]
+    ; vpaddq ymm10, ymm12, ymm12              ;  2*g[8]
+    ; vpaddq ymm12, ymm10, ymm12              ;  3*g[8]
+    ; vpaddq ymm10, ymm10, ymm10              ;  4*g[8]
+    ; vpaddq ymm10, ymm10, ymm10              ;  8*g[8]
+    ; vpaddq ymm10, ymm10, ymm10              ; 16*g[8]
+    ; vpaddq ymm12, ymm10, ymm12              ; compute 19*g[8]
     vmovdqa yword [rsp + 8*32], ymm12        ; spill 19*g[8]
 
     vpmuludq ymm10, ymm15, ymm12
@@ -137,12 +138,13 @@ crypto_scalarmult_curve13318_avx2_fe10x4_mul_asm:
     vmovdqa ymm15, yword [rsi + 3*32]        ; load f[3]
     vpaddq ymm14, ymm15, ymm15              ; compute 2*f[3]             
     vmovdqa ymm11, yword [rdx + 7*32]        ;  1*g[7] 
-    vpaddq ymm10, ymm11, ymm11              ;  2*g[7]
-    vpaddq ymm11, ymm10, ymm11              ;  3*g[7]
-    vpaddq ymm10, ymm10, ymm10              ;  4*g[7]
-    vpaddq ymm10, ymm10, ymm10              ;  8*g[7]
-    vpaddq ymm10, ymm10, ymm10              ; 16*g[7]
-    vpaddq ymm11, ymm10, ymm11              ; compute 19*g[7]
+    vpmuludq ymm11, ymm11, yword [rel .const_19]    ; compute 19*g[7]
+    ; vpaddq ymm10, ymm11, ymm11              ;  2*g[7]
+    ; vpaddq ymm11, ymm10, ymm11              ;  3*g[7]
+    ; vpaddq ymm10, ymm10, ymm10              ;  4*g[7]
+    ; vpaddq ymm10, ymm10, ymm10              ;  8*g[7]
+    ; vpaddq ymm10, ymm10, ymm10              ; 16*g[7]
+    ; vpaddq ymm11, ymm10, ymm11              ; compute 19*g[7]
     vmovdqa yword [rsp + 7*32], ymm11        ; spill 19*g[7]
 
     vpmuludq ymm10, ymm14, ymm11
@@ -169,12 +171,13 @@ crypto_scalarmult_curve13318_avx2_fe10x4_mul_asm:
     ; Round 5/10
     vmovdqa ymm15, yword [rsi + 4*32]        ; load f[4]
     vmovdqa ymm13, yword [rdx + 6*32]        ;  1*g[6] 
-    vpaddq ymm10, ymm13, ymm13              ;  2*g[6]
-    vpaddq ymm13, ymm10, ymm13              ;  3*g[6]
-    vpaddq ymm10, ymm10, ymm10              ;  4*g[6]
-    vpaddq ymm10, ymm10, ymm10              ;  8*g[6]
-    vpaddq ymm10, ymm10, ymm10              ; 16*g[6]
-    vpaddq ymm13, ymm10, ymm13              ; compute 19*g[6]
+    vpmuludq ymm13, ymm13, yword [rel .const_19]    ; compute 19*g[6]
+    ; vpaddq ymm10, ymm13, ymm13              ;  2*g[6]
+    ; vpaddq ymm13, ymm10, ymm13              ;  3*g[6]
+    ; vpaddq ymm10, ymm10, ymm10              ;  4*g[6]
+    ; vpaddq ymm10, ymm10, ymm10              ;  8*g[6]
+    ; vpaddq ymm10, ymm10, ymm10              ; 16*g[6]
+    ; vpaddq ymm13, ymm10, ymm13              ; compute 19*g[6]
     vmovdqa yword [rsp + 6*32], ymm13        ; spill 19*g[6]
 
     vpmuludq ymm10, ymm15, ymm13
@@ -201,13 +204,14 @@ crypto_scalarmult_curve13318_avx2_fe10x4_mul_asm:
     ; Round 6/10
     vmovdqa ymm15, yword [rsi + 5*32]       ; load f[5]
     vpaddq ymm14, ymm15, ymm15              ; compute 2*f[5]         
-    vmovdqa ymm12, yword [rdx + 5*32]       ;  1*g[5] 
-    vpaddq ymm10, ymm12, ymm12              ;  2*g[5]
-    vpaddq ymm12, ymm10, ymm12              ;  3*g[5]
-    vpaddq ymm10, ymm10, ymm10              ;  4*g[5]
-    vpaddq ymm10, ymm10, ymm10              ;  8*g[5]
-    vpaddq ymm10, ymm10, ymm10              ; 16*g[5]
-    vpaddq ymm12, ymm10, ymm12              ; compute 19*g[5]
+    vmovdqa ymm12, yword [rdx + 5*32]       ;  1*g[5]
+    vpmuludq ymm12, ymm12, yword [rel .const_19]    ; compute 19*g[5] 
+    ; vpaddq ymm10, ymm12, ymm12              ;  2*g[5]
+    ; vpaddq ymm12, ymm10, ymm12              ;  3*g[5]
+    ; vpaddq ymm10, ymm10, ymm10              ;  4*g[5]
+    ; vpaddq ymm10, ymm10, ymm10              ;  8*g[5]
+    ; vpaddq ymm10, ymm10, ymm10              ; 16*g[5]
+    ; vpaddq ymm12, ymm10, ymm12              ; compute 19*g[5]
     vmovdqa yword [rsp + 5*32], ymm12       ; spill 19*g[5]
 
     vpmuludq ymm10, ymm14, ymm12
@@ -233,13 +237,14 @@ crypto_scalarmult_curve13318_avx2_fe10x4_mul_asm:
 
     ; Round 7/10
     vmovdqa ymm15, yword [rsi + 6*32]        ; load f[6]
-    vmovdqa ymm11, yword [rdx + 4*32]        ;  1*g[4] 
-    vpaddq ymm10, ymm11, ymm11              ;  2*g[4]
-    vpaddq ymm11, ymm10, ymm11              ;  3*g[4]
-    vpaddq ymm10, ymm10, ymm10              ;  4*g[4]
-    vpaddq ymm10, ymm10, ymm10              ;  8*g[4]
-    vpaddq ymm10, ymm10, ymm10              ; 16*g[4]
-    vpaddq ymm11, ymm10, ymm11              ; compute 19*g[4]
+    vmovdqa ymm11, yword [rdx + 4*32]        ;  1*g[4]
+    vpmuludq ymm11, ymm11, yword [rel .const_19]    ; compute 19*g[4]
+    ; vpaddq ymm10, ymm11, ymm11              ;  2*g[4]
+    ; vpaddq ymm11, ymm10, ymm11              ;  3*g[4]
+    ; vpaddq ymm10, ymm10, ymm10              ;  4*g[4]
+    ; vpaddq ymm10, ymm10, ymm10              ;  8*g[4]
+    ; vpaddq ymm10, ymm10, ymm10              ; 16*g[4]
+    ; vpaddq ymm11, ymm10, ymm11              ; compute 19*g[4]
     vmovdqa yword [rsp + 4*32], ymm11        ; spill 19*g[4]
 
     vpmuludq ymm10, ymm15, ymm11
@@ -267,12 +272,13 @@ crypto_scalarmult_curve13318_avx2_fe10x4_mul_asm:
     vmovdqa ymm15, yword [rsi + 7*32]        ; load f[7]
     vpaddq ymm14, ymm15, ymm15              ; compute 2*f[7]         
     vmovdqa ymm13, yword [rdx + 3*32]        ;  1*g[3] 
-    vpaddq ymm10, ymm13, ymm13              ;  2*g[3]
-    vpaddq ymm13, ymm10, ymm13              ;  3*g[3]
-    vpaddq ymm10, ymm10, ymm10              ;  4*g[3]
-    vpaddq ymm10, ymm10, ymm10              ;  8*g[3]
-    vpaddq ymm10, ymm10, ymm10              ; 16*g[3]
-    vpaddq ymm13, ymm10, ymm13              ; compute 19*g[3]
+    vpmuludq ymm13, ymm13, yword [rel .const_19]    ; compute 19*g[8]
+    ; vpaddq ymm10, ymm13, ymm13              ;  2*g[3]
+    ; vpaddq ymm13, ymm10, ymm13              ;  3*g[3]
+    ; vpaddq ymm10, ymm10, ymm10              ;  4*g[3]
+    ; vpaddq ymm10, ymm10, ymm10              ;  8*g[3]
+    ; vpaddq ymm10, ymm10, ymm10              ; 16*g[3]
+    ; vpaddq ymm13, ymm10, ymm13              ; compute 19*g[3]
 
     vpmuludq ymm10, ymm14, ymm13
     vpaddq ymm0, ymm0, ymm10
@@ -298,12 +304,13 @@ crypto_scalarmult_curve13318_avx2_fe10x4_mul_asm:
     ; Round 9/10
     vmovdqa ymm15, yword [rsi + 8*32]        ; load f[8]
     vmovdqa ymm12, yword [rdx + 2*32]        ;  1*g[2]
-    vpaddq ymm10, ymm12, ymm12              ;  2*g[2]
-    vpaddq ymm12, ymm10, ymm12              ;  3*g[2]
-    vpaddq ymm10, ymm10, ymm10              ;  4*g[2]
-    vpaddq ymm10, ymm10, ymm10              ;  8*g[2]
-    vpaddq ymm10, ymm10, ymm10              ; 16*g[2]
-    vpaddq ymm12, ymm10, ymm12              ; compute 19*g[2]
+    ; vpaddq ymm10, ymm12, ymm12              ;  2*g[2]
+    ; vpaddq ymm12, ymm10, ymm12              ;  3*g[2]
+    ; vpaddq ymm10, ymm10, ymm10              ;  4*g[2]
+    ; vpaddq ymm10, ymm10, ymm10              ;  8*g[2]
+    ; vpaddq ymm10, ymm10, ymm10              ; 16*g[2]
+    ; vpaddq ymm12, ymm10, ymm12              ; compute 19*g[2]
+    vpmuludq ymm12, ymm12, yword [rel .const_19]    ; compute 19*g[2]
 
     vpmuludq ymm10, ymm15, ymm12
     vpaddq ymm0, ymm0, ymm10
@@ -330,12 +337,13 @@ crypto_scalarmult_curve13318_avx2_fe10x4_mul_asm:
     vmovdqa ymm15, yword [rsi + 9*32]        ; load f[9]
     vpaddq ymm14, ymm15, ymm15              ; compute 2*f[9]         
     vmovdqa ymm11, yword [rdx + 1*32]        ;  1*g[1] 
-    vpaddq ymm10, ymm11, ymm11              ;  2*g[1]
-    vpaddq ymm11, ymm10, ymm11              ;  3*g[1]
-    vpaddq ymm10, ymm10, ymm10              ;  4*g[1]
-    vpaddq ymm10, ymm10, ymm10              ;  8*g[1]
-    vpaddq ymm10, ymm10, ymm10              ; 16*g[1]
-    vpaddq ymm11, ymm10, ymm11              ; compute 19*g[9]
+    vpmuludq ymm11, ymm11, yword [rel .const_19]    ; compute 19*g[1]
+    ; vpaddq ymm10, ymm11, ymm11              ;  2*g[1]
+    ; vpaddq ymm11, ymm10, ymm11              ;  3*g[1]
+    ; vpaddq ymm10, ymm10, ymm10              ;  4*g[1]
+    ; vpaddq ymm10, ymm10, ymm10              ;  8*g[1]
+    ; vpaddq ymm10, ymm10, ymm10              ; 16*g[1]
+    ; vpaddq ymm11, ymm10, ymm11              ; compute 19*g[9]
 
     vpmuludq ymm10, ymm14, ymm11
     vpaddq ymm0, ymm0, ymm10
@@ -372,3 +380,7 @@ crypto_scalarmult_curve13318_avx2_fe10x4_mul_asm:
     mov rsp, rbp
     pop rbp
     ret
+
+section .rodata:
+align 32, db 0
+.const_19: times 4 dq 19
