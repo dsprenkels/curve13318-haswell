@@ -97,7 +97,7 @@ fe10x4_mul_orig:
     vpmuludq ymm7, ymm15, yword [rdx + 7*32]
     vpmuludq ymm8, ymm15, yword [rdx + 8*32]
     vpmuludq ymm9, ymm15, yword [rdx + 9*32]
-    
+
     ; round 2/10
     vmovdqa ymm15, yword [rsi + 1*32]        ; load f[1]
     vpaddq ymm14, ymm15, ymm15              ; compute 2*f[1]
@@ -109,7 +109,7 @@ fe10x4_mul_orig:
     vpaddq ymm10, ymm10, ymm10              ; 16*g[9]
     vpaddq ymm13, ymm10, ymm13              ; compute 19*g[9]
     vmovdqa yword [rsp + 9*32], ymm13        ; spill 19*g[9]
-    
+
     vpmuludq ymm10, ymm14, ymm13
     vpaddq ymm0, ymm0, ymm10
     vpmuludq ymm10, ymm15, yword [rdx + 0*32]
@@ -162,7 +162,7 @@ fe10x4_mul_orig:
     vpaddq ymm8, ymm8, ymm10    
     vpmuludq ymm10, ymm15, yword [rdx + 7*32]
     vpaddq ymm9, ymm9, ymm10
-    
+
     ; Round 4/10
     vmovdqa ymm15, yword [rsi + 3*32]        ; load f[3]
     vpaddq ymm14, ymm15, ymm15              ; compute 2*f[3]             
@@ -227,7 +227,7 @@ fe10x4_mul_orig:
     vpaddq ymm8, ymm8, ymm10
     vpmuludq ymm10, ymm15, yword [rdx + 5*32]
     vpaddq ymm9, ymm9, ymm10
-    
+
     ; Round 6/10
     vmovdqa ymm15, yword [rsi + 5*32]       ; load f[5]
     vpaddq ymm14, ymm15, ymm15              ; compute 2*f[5]         
@@ -292,7 +292,7 @@ fe10x4_mul_orig:
     vpaddq ymm8, ymm8, ymm10
     vpmuludq ymm10, ymm15, yword [rdx + 3*32]
     vpaddq ymm9, ymm9, ymm10
-    
+
     ; Round 8/10
     vmovdqa ymm15, yword [rsi + 7*32]        ; load f[7]
     vpaddq ymm14, ymm15, ymm15              ; compute 2*f[7]         
@@ -324,7 +324,7 @@ fe10x4_mul_orig:
     vpaddq ymm8, ymm8, ymm10
     vpmuludq ymm10, ymm15, yword [rdx + 2*32]
     vpaddq ymm9, ymm9, ymm10
-    
+
     ; Round 9/10
     vmovdqa ymm15, yword [rsi + 8*32]        ; load f[8]
     vmovdqa ymm12, yword [rdx + 2*32]        ;  1*g[2]
@@ -387,7 +387,7 @@ fe10x4_mul_orig:
     vpaddq ymm8, ymm8, ymm10
     vpmuludq ymm10, ymm15, yword [rdx + 0*32]
     vpaddq ymm9, ymm9, ymm10
-    
+
     vmovdqa yword [rdi + 0*32], ymm0
     vmovdqa yword [rdi + 1*32], ymm1
     vmovdqa yword [rdi + 2*32], ymm2
@@ -398,7 +398,7 @@ fe10x4_mul_orig:
     vmovdqa yword [rdi + 7*32], ymm7
     vmovdqa yword [rdi + 8*32], ymm8
     vmovdqa yword [rdi + 9*32], ymm9
-    
+
     mov rsp, rbp
     pop rbp
     bench_epilogue
@@ -427,7 +427,7 @@ fe10x4_mul_vpmuludq19:
     vpmuludq ymm7, ymm15, yword [rdx + 7*32]
     vpmuludq ymm8, ymm15, yword [rdx + 8*32]
     vpmuludq ymm9, ymm15, yword [rdx + 9*32]
-    
+
     ; round 2/10
     vmovdqa ymm15, yword [rsi + 1*32]        ; load f[1]
     vpaddq ymm14, ymm15, ymm15              ; compute 2*f[1]
@@ -439,7 +439,7 @@ fe10x4_mul_vpmuludq19:
     vpaddq ymm10, ymm10, ymm10              ; 16*g[9]
     vpaddq ymm13, ymm10, ymm13              ; compute 19*g[9]
     vmovdqa yword [rsp + 9*32], ymm13        ; spill 19*g[9]
-    
+
     vpmuludq ymm10, ymm14, ymm13
     vpaddq ymm0, ymm0, ymm10
     vpmuludq ymm10, ymm15, yword [rdx + 0*32]
@@ -487,7 +487,7 @@ fe10x4_mul_vpmuludq19:
     vpaddq ymm8, ymm8, ymm10    
     vpmuludq ymm10, ymm15, yword [rdx + 7*32]
     vpaddq ymm9, ymm9, ymm10
-    
+
     ; Round 4/10
     vmovdqa ymm15, yword [rsi + 3*32]        ; load f[3]
     vpaddq ymm14, ymm15, ymm15              ; compute 2*f[3]             
@@ -542,7 +542,7 @@ fe10x4_mul_vpmuludq19:
     vpaddq ymm8, ymm8, ymm10
     vpmuludq ymm10, ymm15, yword [rdx + 5*32]
     vpaddq ymm9, ymm9, ymm10
-    
+
     ; Round 6/10
     vmovdqa ymm15, yword [rsi + 5*32]       ; load f[5]
     vpaddq ymm14, ymm15, ymm15              ; compute 2*f[5]         
@@ -597,7 +597,7 @@ fe10x4_mul_vpmuludq19:
     vpaddq ymm8, ymm8, ymm10
     vpmuludq ymm10, ymm15, yword [rdx + 3*32]
     vpaddq ymm9, ymm9, ymm10
-    
+
     ; Round 8/10
     vmovdqa ymm15, yword [rsi + 7*32]        ; load f[7]
     vpaddq ymm14, ymm15, ymm15              ; compute 2*f[7]         
@@ -624,7 +624,7 @@ fe10x4_mul_vpmuludq19:
     vpaddq ymm8, ymm8, ymm10
     vpmuludq ymm10, ymm15, yword [rdx + 2*32]
     vpaddq ymm9, ymm9, ymm10
-    
+
     ; Round 9/10
     vmovdqa ymm15, yword [rsi + 8*32]        ; load f[8]
     vmovdqa ymm12, yword [rdx + 2*32]        ;  1*g[2]
@@ -677,7 +677,7 @@ fe10x4_mul_vpmuludq19:
     vpaddq ymm8, ymm8, ymm10
     vpmuludq ymm10, ymm15, yword [rdx + 0*32]
     vpaddq ymm9, ymm9, ymm10
-    
+
     vmovdqa yword [rdi + 0*32], ymm0
     vmovdqa yword [rdi + 1*32], ymm1
     vmovdqa yword [rdi + 2*32], ymm2
@@ -688,7 +688,7 @@ fe10x4_mul_vpmuludq19:
     vmovdqa yword [rdi + 7*32], ymm7
     vmovdqa yword [rdi + 8*32], ymm8
     vmovdqa yword [rdi + 9*32], ymm9
-    
+
     mov rsp, rbp
     pop rbp
     bench_epilogue
@@ -1339,7 +1339,7 @@ fe10x4_mul_easy_reorder:
     pop rbp
     bench_epilogue
     ret
-    
+
 fe10x4_mul_vpmuludq19_2:
     lea rdi, [rel scratch_space]
     lea rsi, [rel scratch_space+384]
@@ -1365,17 +1365,11 @@ fe10x4_mul_vpmuludq19_2:
     vpmuludq ymm9, ymm15, yword [rdx + 9*32]
 
     ; round 2/10
-    vmovdqa ymm15, yword [rsi + 1*32]        ; load f[1]
-    vpaddq ymm14, ymm15, ymm15              ; compute 2*f[1]
-    vmovdqa ymm12, yword [rdx + 9*32]        ;  1*g[9] 
-    vpaddq ymm10, ymm12, ymm12              ;  2*g[9]
-    vpaddq ymm12, ymm10, ymm12              ;  3*g[9]
-    vpaddq ymm10, ymm10, ymm10              ;  4*g[9]
-    vpaddq ymm10, ymm10, ymm10              ;  8*g[9]
-    vpaddq ymm10, ymm10, ymm10              ; 16*g[9]
-    vpaddq ymm12, ymm10, ymm12              ; compute 19*g[9]
-    vmovdqa yword [rsp + 9*32], ymm12        ; spill 19*g[9]
+    vmovdqa ymm15, yword [rsi + 1*32]           ; load f[1]
+    vpaddq ymm14, ymm15, ymm15                  ; compute 2*f[1]
     vmovdqa ymm13, yword [rel .const_19]
+    vpmuludq ymm12, ymm13, yword [rdx + 9*32]   ; compute 19*g[9]
+    vmovdqa yword [rsp + 9*32], ymm12           ; spill 19*g[9]
 
     vpmuludq ymm10, ymm14, ymm12
     vpaddq ymm0, ymm0, ymm10
@@ -1399,9 +1393,9 @@ fe10x4_mul_vpmuludq19_2:
     vpaddq ymm9, ymm9, ymm10
 
     ; round 3/10
-    vmovdqa ymm15, yword [rsi + 2*32]        ; load f[2]
-    vpmuludq ymm11, ymm13, yword [rdx + 8*32]    ; compute 19*g[8]
-    vmovdqa yword [rsp + 8*32], ymm11        ; spill 19*g[8]
+    vmovdqa ymm15, yword [rsi + 2*32]           ; load f[2]
+    vpmuludq ymm11, ymm13, yword [rdx + 8*32]   ; compute 19*g[8]
+    vmovdqa yword [rsp + 8*32], ymm11           ; spill 19*g[8]
 
     vpmuludq ymm10, ymm15, ymm11
     vpaddq ymm0, ymm0, ymm10
@@ -1425,10 +1419,10 @@ fe10x4_mul_vpmuludq19_2:
     vpaddq ymm9, ymm9, ymm10
 
     ; Round 4/10
-    vmovdqa ymm15, yword [rsi + 3*32]        ; load f[3]
-    vpaddq ymm14, ymm15, ymm15              ; compute 2*f[3]             
-    vpmuludq ymm12, ymm13, yword [rdx + 7*32]    ; compute 19*g[7]
-    vmovdqa yword [rsp + 7*32], ymm12        ; spill 19*g[7]
+    vmovdqa ymm15, yword [rsi + 3*32]           ; load f[3]
+    vpaddq ymm14, ymm15, ymm15                  ; compute 2*f[3]             
+    vpmuludq ymm12, ymm13, yword [rdx + 7*32]   ; compute 19*g[7]
+    vmovdqa yword [rsp + 7*32], ymm12           ; spill 19*g[7]
 
     vpmuludq ymm10, ymm14, ymm12
     vpaddq ymm0, ymm0, ymm10
@@ -1452,9 +1446,9 @@ fe10x4_mul_vpmuludq19_2:
     vpaddq ymm9, ymm9, ymm10
 
     ; Round 5/10
-    vmovdqa ymm15, yword [rsi + 4*32]        ; load f[4]
-    vpmuludq ymm11, ymm13, yword [rdx + 6*32]    ; compute 19*g[6]
-    vmovdqa yword [rsp + 6*32], ymm11        ; spill 19*g[6]
+    vmovdqa ymm15, yword [rsi + 4*32]           ; load f[4]
+    vpmuludq ymm11, ymm13, yword [rdx + 6*32]   ; compute 19*g[6]
+    vmovdqa yword [rsp + 6*32], ymm11           ; spill 19*g[6]
 
     vpmuludq ymm10, ymm15, ymm11
     vpaddq ymm0, ymm0, ymm10
@@ -1478,10 +1472,10 @@ fe10x4_mul_vpmuludq19_2:
     vpaddq ymm9, ymm9, ymm10
 
     ; Round 6/10
-    vmovdqa ymm15, yword [rsi + 5*32]       ; load f[5]
-    vpaddq ymm14, ymm15, ymm15              ; compute 2*f[5]         
-    vpmuludq ymm12, ymm13, yword [rdx + 5*32]    ; compute 19*g[5] 
-    vmovdqa yword [rsp + 5*32], ymm12       ; spill 19*g[5]
+    vmovdqa ymm15, yword [rsi + 5*32]           ; load f[5]
+    vpaddq ymm14, ymm15, ymm15                  ; compute 2*f[5]         
+    vpmuludq ymm12, ymm13, yword [rdx + 5*32]   ; compute 19*g[5] 
+    vmovdqa yword [rsp + 5*32], ymm12           ; spill 19*g[5]
 
     vpmuludq ymm10, ymm14, ymm12
     vpaddq ymm0, ymm0, ymm10
@@ -1505,9 +1499,9 @@ fe10x4_mul_vpmuludq19_2:
     vpaddq ymm9, ymm9, ymm10
 
     ; Round 7/10
-    vmovdqa ymm15, yword [rsi + 6*32]        ; load f[6]
-    vpmuludq ymm11, ymm13, yword [rdx + 4*32]    ; compute 19*g[4]
-    vmovdqa yword [rsp + 4*32], ymm11        ; spill 19*g[4]
+    vmovdqa ymm15, yword [rsi + 6*32]           ; load f[6]
+    vpmuludq ymm11, ymm13, yword [rdx + 4*32]   ; compute 19*g[4]
+    vmovdqa yword [rsp + 4*32], ymm11           ; spill 19*g[4]
 
     vpmuludq ymm10, ymm15, ymm11
     vpaddq ymm0, ymm0, ymm10
@@ -1531,9 +1525,9 @@ fe10x4_mul_vpmuludq19_2:
     vpaddq ymm9, ymm9, ymm10
 
     ; Round 8/10
-    vmovdqa ymm15, yword [rsi + 7*32]        ; load f[7]
-    vpaddq ymm14, ymm15, ymm15              ; compute 2*f[7]         
-    vpmuludq ymm12, ymm13, yword [rdx + 3*32]    ; compute 19*g[8]
+    vmovdqa ymm15, yword [rsi + 7*32]           ; load f[7]
+    vpaddq ymm14, ymm15, ymm15                  ; compute 2*f[7]         
+    vpmuludq ymm12, ymm13, yword [rdx + 3*32]   ; compute 19*g[8]
     vmovdqa yword [rsp + 3*32], ymm12
 
     vpmuludq ymm10, ymm14, ymm12
@@ -1558,8 +1552,8 @@ fe10x4_mul_vpmuludq19_2:
     vpaddq ymm9, ymm9, ymm10
 
     ; Round 9/10
-    vmovdqa ymm15, yword [rsi + 8*32]        ; load f[8]
-    vpmuludq ymm11, ymm13, yword [rdx + 2*32]    ; compute 19*g[2]
+    vmovdqa ymm15, yword [rsi + 8*32]           ; load f[8]
+    vpmuludq ymm11, ymm13, yword [rdx + 2*32]   ; compute 19*g[2]
 
     vpmuludq ymm10, ymm15, ymm11
     vpaddq ymm0, ymm0, ymm10
@@ -1583,9 +1577,9 @@ fe10x4_mul_vpmuludq19_2:
     vpaddq ymm9, ymm9, ymm10
 
     ; Round 10/10
-    vmovdqa ymm15, yword [rsi + 9*32]        ; load f[9]
-    vpaddq ymm14, ymm15, ymm15              ; compute 2*f[9]         
-    vpmuludq ymm12, ymm13, yword [rdx + 1*32]    ; compute 19*g[1]
+    vmovdqa ymm15, yword [rsi + 9*32]           ; load f[9]
+    vpaddq ymm14, ymm15, ymm15                  ; compute 2*f[9]         
+    vpmuludq ymm12, ymm13, yword [rdx + 1*32]   ; compute 19*g[1]
 
     vpmuludq ymm10, ymm14, ymm12
     vpaddq ymm0, ymm0, ymm10
