@@ -53,6 +53,8 @@ ge_add.argtypes = [ctypes.c_uint64 * 30] * 3
 
 fe10x4_carry = curve13318.crypto_scalarmult_curve13318_avx2_fe10x4_carry
 fe10x4_carry.argtypes = [ctypes.c_uint64 * 40]
+fe10x4_mul = curve13318.crypto_scalarmult_curve13318_avx2_fe10x4_mul_asm
+fe10x4_mul.argtypes = [ctypes.c_uint64 * 40] * 3
 
 
 class TestFE10(unittest.TestCase):
@@ -189,6 +191,22 @@ class TestFE10x4(unittest.TestCase):
             assert(0 <= x <= 1.01 * 2**26), "limb {} out of bounds: 0x{:X}".format(i, x)
         for i, x in list(enumerate(vz[lane::4]))[1::1]:
             assert(0 <= x <= 1.01 * 2**26), "limb {} out of bounds: 0x{:X}".format(i, x)
+
+    @given(st.lists(st.integers(0, 2**27 - 1), min_size=10, max_size=10),
+           st.lists(st.integers(0, 2**27 - 1), min_size=10, max_size=10),
+           st.integers(0, 3))
+    def test_mul(self, limbs_x, limbs_y, lane):
+        vx = make_fe10x4(limbs_x, lane)
+        vy = make_fe10x4(limbs_y, lane)
+        vz = make_fe10x4([], lane)
+        note("mul got:      {} * {}".format([hex(x) for x in vx[lane::4]], [hex(x) for x in vy[lane::4]]))
+        fe10x4_mul(vz, vx, vy)
+        actual = fe10x4_val(vz, lane)
+        expected = fe10_val(limbs_x) * fe10_val(limbs_y)
+        note("mul returned: {}".format([hex(x) for x in vz[lane::4]]))
+        # note("actual value:   0x{:32X}".format(F(actual)))
+        # note("expected value: 0x{:32X}".format(F(expected)))
+        self.assertEqual(F(actual), F(expected))
 
 class TestGE(unittest.TestCase):
     @staticmethod
