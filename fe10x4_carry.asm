@@ -7,30 +7,30 @@
 
 %macro fe10x4_carry_load 1
     ; load field element
-    vmovdqa ymm0, yword [%1]
-    vmovdqa ymm1, yword [%1 + 32]
-    vmovdqa ymm2, yword [%1 + 64]
-    vmovdqa ymm3, yword [%1 + 96]
-    vmovdqa ymm4, yword [%1 + 128]
-    vmovdqa ymm5, yword [%1 + 160]
-    vmovdqa ymm6, yword [%1 + 192]
-    vmovdqa ymm7, yword [%1 + 224]
-    vmovdqa ymm8, yword [%1 + 256]
-    vmovdqa ymm9, yword [%1 + 288]
+    vmovdqa ymm0, yword [%1 + 0*32]
+    vmovdqa ymm1, yword [%1 + 1*32]
+    vmovdqa ymm2, yword [%1 + 2*32]
+    vmovdqa ymm3, yword [%1 + 3*32]
+    vmovdqa ymm4, yword [%1 + 4*32]
+    vmovdqa ymm5, yword [%1 + 5*32]
+    vmovdqa ymm6, yword [%1 + 6*32]
+    vmovdqa ymm7, yword [%1 + 7*32]
+    vmovdqa ymm8, yword [%1 + 8*32]
+    vmovdqa ymm9, yword [%1 + 9*32]
 %endmacro
 
 %macro fe10x4_carry_store 1
     ; store field element
-    vmovdqa yword [%1],       ymm0
-    vmovdqa yword [%1 + 32],  ymm1
-    vmovdqa yword [%1 + 64],  ymm2
-    vmovdqa yword [%1 + 96],  ymm3
-    vmovdqa yword [%1 + 128], ymm4
-    vmovdqa yword [%1 + 160], ymm5
-    vmovdqa yword [%1 + 192], ymm6
-    vmovdqa yword [%1 + 224], ymm7
-    vmovdqa yword [%1 + 256], ymm8
-    vmovdqa yword [%1 + 288], ymm9
+    vmovdqa yword [%1 + 0*32], ymm0
+    vmovdqa yword [%1 + 1*32], ymm1
+    vmovdqa yword [%1 + 2*32], ymm2
+    vmovdqa yword [%1 + 3*32], ymm3
+    vmovdqa yword [%1 + 4*32], ymm4
+    vmovdqa yword [%1 + 5*32], ymm5
+    vmovdqa yword [%1 + 6*32], ymm6
+    vmovdqa yword [%1 + 7*32], ymm7
+    vmovdqa yword [%1 + 8*32], ymm8
+    vmovdqa yword [%1 + 9*32], ymm9
 %endmacro
 
 %macro fe10x4_carry_body 0

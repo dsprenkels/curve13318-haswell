@@ -3,7 +3,7 @@ NASM :=	  nasm -g -F dwarf -f elf64 $^
 CFLAGS +=   -g -m64 -std=c99 -Wall -Wshadow -Wpointer-arith -Wcast-qual \
 			-Wstrict-prototypes -fPIC -O2 -masm=intel -march=haswell
 
-BENCHMARKS := fe10x4_mul
+BENCHMARKS := fe10x4_carry fe10x4_mul
 ASM_SCRS := $(wildcard *.asm)
 C_SRCS :=   $(wildcard *.c)
 ASM_OBJS := $(ASM_SCRS:%.asm=%.o)
