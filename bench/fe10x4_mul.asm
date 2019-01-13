@@ -76,13 +76,10 @@ fe10x4_mul_orig:
     ; TODO(dsprenkels) We must benchmark if this is actually better inside the ge_* routines.
     ;
     lea rdi, [rel scratch_space]
-    lea rsi, [rel scratch_space+384]
+    lea rsi, [rel scratch_space+320]
     bench_prologue
-    lea rdx, [rel scratch_space+768]
+    lea rdx, [rel scratch_space+640]
 
-    push rbp
-    mov rbp, rsp
-    and rsp, -32
     sub rsp, 10*32
 
     ; round 1/10
@@ -399,20 +396,15 @@ fe10x4_mul_orig:
     vmovdqa yword [rdi + 8*32], ymm8
     vmovdqa yword [rdi + 9*32], ymm9
 
-    mov rsp, rbp
-    pop rbp
     bench_epilogue
     ret
 
 fe10x4_mul_vpmuludq19:
     lea rdi, [rel scratch_space]
-    lea rsi, [rel scratch_space+384]
+    lea rsi, [rel scratch_space+320]
     bench_prologue
-    lea rdx, [rel scratch_space+768]
+    lea rdx, [rel scratch_space+640]
 
-    push rbp
-    mov rbp, rsp
-    and rsp, -32
     sub rsp, 10*32
 
     ; round 1/10
@@ -689,8 +681,6 @@ fe10x4_mul_vpmuludq19:
     vmovdqa yword [rdi + 8*32], ymm8
     vmovdqa yword [rdi + 9*32], ymm9
 
-    mov rsp, rbp
-    pop rbp
     bench_epilogue
     ret
 
@@ -700,13 +690,10 @@ align 32, db 0
 
 fe10x4_mul_vpsllq:
     lea rdi, [rel scratch_space]
-    lea rsi, [rel scratch_space+384]
+    lea rsi, [rel scratch_space+320]
     bench_prologue
-    lea rdx, [rel scratch_space+768]
+    lea rdx, [rel scratch_space+640]
 
-    push rbp
-    mov rbp, rsp
-    and rsp, -32
     sub rsp, 10*32
 
     ; round 1/10
@@ -1005,20 +992,15 @@ fe10x4_mul_vpsllq:
     vmovdqa yword [rdi + 8*32], ymm8
     vmovdqa yword [rdi + 9*32], ymm9
 
-    mov rsp, rbp
-    pop rbp
     bench_epilogue
     ret
 
 fe10x4_mul_easy_reorder:
     lea rdi, [rel scratch_space]
-    lea rsi, [rel scratch_space+384]
+    lea rsi, [rel scratch_space+320]
     bench_prologue
-    lea rdx, [rel scratch_space+768]
+    lea rdx, [rel scratch_space+640]
 
-    push rbp
-    mov rbp, rsp
-    and rsp, -32
     sub rsp, 10*32
 
     ; round 1/10
@@ -1335,20 +1317,15 @@ fe10x4_mul_easy_reorder:
     vmovdqa yword [rdi + 8*32], ymm8
     vmovdqa yword [rdi + 9*32], ymm9
 
-    mov rsp, rbp
-    pop rbp
     bench_epilogue
     ret
 
 fe10x4_mul_vpmuludq19_2:
     lea rdi, [rel scratch_space]
-    lea rsi, [rel scratch_space+384]
+    lea rsi, [rel scratch_space+320]
     bench_prologue
-    lea rdx, [rel scratch_space+768]
+    lea rdx, [rel scratch_space+640]
 
-    push rbp
-    mov rbp, rsp
-    and rsp, -32
     sub rsp, 10*32
 
     ; round 1/10
@@ -1613,8 +1590,6 @@ fe10x4_mul_vpmuludq19_2:
     vmovdqa yword [rdi + 8*32], ymm8
     vmovdqa yword [rdi + 9*32], ymm9
 
-    mov rsp, rbp
-    pop rbp
     bench_epilogue
     ret
 
