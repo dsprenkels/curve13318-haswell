@@ -1344,7 +1344,7 @@ fe10x4_mul_vpmuludq19_2:
     ; round 2/10
     vmovdqa ymm15, yword [rsi + 1*32]           ; load f[1]
     vpaddq ymm14, ymm15, ymm15                  ; compute 2*f[1]
-    vmovdqa ymm13, yword [rel .const_19]
+    vpbroadcastq ymm13, qword [rel .const_19]
     vpmuludq ymm12, ymm13, yword [rdx + 9*32]   ; compute 19*g[9]
     vmovdqa yword [rsp + 9*32], ymm12           ; spill 19*g[9]
 
@@ -1595,4 +1595,4 @@ fe10x4_mul_vpmuludq19_2:
 
 section .rodata:
 align 32, db 0
-.const_19: times 4 dq 19
+.const_19: dq 19

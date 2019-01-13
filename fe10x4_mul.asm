@@ -59,9 +59,9 @@
     ; round 2/10
     vmovdqa ymm15, yword [%1 + 1*32]            ; load f[1]
     vpaddq ymm14, ymm15, ymm15                  ; compute 2*f[1]
-    vmovdqa ymm13, yword [rel .const_19]
+    vpbroadcastq ymm13, qword [rel .const_19]
     vpmuludq ymm12, ymm13, yword [%2 + 9*32]    ; compute 19*g[9]
-    vmovdqa yword [%3 + 6*32], ymm12           ; spill 19*g[9]
+    vmovdqa yword [%3 + 6*32], ymm12            ; spill 19*g[9]
 
     vpmuludq ymm10, ymm14, ymm12
     vpaddq ymm0, ymm0, ymm10
@@ -87,7 +87,7 @@
     ; round 3/10
     vmovdqa ymm15, yword [%1 + 2*32]            ; load f[2]
     vpmuludq ymm11, ymm13, yword [%2 + 8*32]    ; compute 19*g[8]
-    vmovdqa yword [%3 + 5*32], ymm11           ; spill 19*g[8]
+    vmovdqa yword [%3 + 5*32], ymm11            ; spill 19*g[8]
 
     vpmuludq ymm10, ymm15, ymm11
     vpaddq ymm0, ymm0, ymm10
@@ -114,7 +114,7 @@
     vmovdqa ymm15, yword [%1 + 3*32]            ; load f[3]
     vpaddq ymm14, ymm15, ymm15                  ; compute 2*f[3]             
     vpmuludq ymm12, ymm13, yword [%2 + 7*32]    ; compute 19*g[7]
-    vmovdqa yword [%3 + 4*32], ymm12           ; spill 19*g[7]
+    vmovdqa yword [%3 + 4*32], ymm12            ; spill 19*g[7]
 
     vpmuludq ymm10, ymm14, ymm12
     vpaddq ymm0, ymm0, ymm10
@@ -140,7 +140,7 @@
     ; Round 5/10
     vmovdqa ymm15, yword [%1 + 4*32]            ; load f[4]
     vpmuludq ymm11, ymm13, yword [%2 + 6*32]    ; compute 19*g[6]
-    vmovdqa yword [%3 + 3*32], ymm11           ; spill 19*g[6]
+    vmovdqa yword [%3 + 3*32], ymm11            ; spill 19*g[6]
 
     vpmuludq ymm10, ymm15, ymm11
     vpaddq ymm0, ymm0, ymm10
@@ -167,7 +167,7 @@
     vmovdqa ymm15, yword [%1 + 5*32]            ; load f[5]
     vpaddq ymm14, ymm15, ymm15                  ; compute 2*f[5]         
     vpmuludq ymm12, ymm13, yword [%2 + 5*32]    ; compute 19*g[5] 
-    vmovdqa yword [%3 + 2*32], ymm12           ; spill 19*g[5]
+    vmovdqa yword [%3 + 2*32], ymm12            ; spill 19*g[5]
 
     vpmuludq ymm10, ymm14, ymm12
     vpaddq ymm0, ymm0, ymm10
@@ -193,7 +193,7 @@
     ; Round 7/10
     vmovdqa ymm15, yword [%1 + 6*32]            ; load f[6]
     vpmuludq ymm11, ymm13, yword [%2 + 4*32]    ; compute 19*g[4]
-    vmovdqa yword [%3 + 1*32], ymm11           ; spill 19*g[4]
+    vmovdqa yword [%3 + 1*32], ymm11            ; spill 19*g[4]
 
     vpmuludq ymm10, ymm15, ymm11
     vpaddq ymm0, ymm0, ymm10
@@ -313,8 +313,8 @@
     ; you call the other macros in this file, define these values after
     ; your call in the .rodata section.
 
-    align 32, db 0
-    .const_19: times 4 dq 19
+    align 8, db 0
+    .const_19: dq 19
 %endmacro
 
 %endif

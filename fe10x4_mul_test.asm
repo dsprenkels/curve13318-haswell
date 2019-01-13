@@ -1,4 +1,4 @@
-; Multiplication macros for field elements (integers modulo 2^255 - 19)
+; Multiplication test for field elements (integers modulo 2^255 - 19)
 ;
 ; Author: Amber Sprenkels <amber@electricdusk.com>
 
