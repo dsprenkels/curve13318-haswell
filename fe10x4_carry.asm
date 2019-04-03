@@ -39,13 +39,13 @@
     ; - Ripple a: h0 -> h1 -> h2 -> h3 -> h4 -> h5 -> h6
     ; - Ripple b: h5 -> h6 -> h7 -> h8 -> h9 -> h0 -> h1
     ;
+    vmovdqa ymm13, yword [rel .MASK26]
+    vmovdqa ymm12, yword [rel .MASK25]
     vpsrlq ymm15, ymm0, 26      ; Round 1a
     vpaddq ymm1, ymm1, ymm15
-    vmovdqa ymm13, yword [rel .MASK26]
     vpand ymm0, ymm0, ymm13
     vpsrlq ymm15, ymm5, 25      ; Round 1b
     vpaddq ymm6, ymm6, ymm15
-    vmovdqa ymm12, yword [rel .MASK25]
     vpand ymm5, ymm5, ymm12
     vpsrlq ymm15, ymm1, 25      ; Round 2a
     vpaddq ymm2, ymm2, ymm15
@@ -83,10 +83,10 @@
     vpand ymm0, ymm0, ymm13
 %endmacro
 
-%endif
-
 %macro fe10x4_carry_consts 0
     align 32, db 0
     .MASK26: times 4 dq 0x3FFFFFF
     .MASK25: times 4 dq 0x1FFFFFF
 %endmacro
+
+%endif

@@ -18,7 +18,7 @@ E = EllipticCurve(F, [-3, 13318])
 
 # Initialize hypothesis
 settings.register_profile('default', settings())
-settings.register_profile('ci', settings(max_examples=1000, timeout=unlimited))
+settings.register_profile('ci', settings(max_examples=1000))
 if os.getenv('CI') != None:
     settings.load_profile('ci')
 else:
@@ -56,6 +56,8 @@ fe10x4_carry.argtypes = [ctypes.c_uint64 * 40]
 fe10x4_mul = curve13318.crypto_scalarmult_curve13318_avx2_fe10x4_mul_asm
 fe10x4_mul.argtypes = [ctypes.c_uint64 * 40] * 3
 
+ge_add_asm = curve13318.crypto_scalarmult_curve13318_avx2_ge_add_asm
+ge_add_asm.argtypes = [ctypes.c_uint64 * 30] * 3
 
 class TestFE10(unittest.TestCase):
     @given(st.lists(st.integers(0, 2**63 - 1), min_size=10, max_size=10))
@@ -221,7 +223,12 @@ class TestGE(unittest.TestCase):
             z_limbs[i] = (2**mask_width - 1) & (z.lift() >> shift)
             shift += mask_width
 
+        stashed = []
         p = (ctypes.c_uint64 * 30)(0)
+        while ctypes.addressof(p) % 32 != 0:
+            stashed.append(p)
+            p = (ctypes.c_uint64 * 30)(0)
+            
         for i, limb in enumerate(x_limbs + y_limbs + z_limbs):
             p[i] = limb
         return p
@@ -419,6 +426,52 @@ class TestGE(unittest.TestCase):
         z3 = z3 + t1
         self.assertEqual(E([x3, y3, z3]), point1 + point2)
 
+    @unittest.skip('Only for debugging')
+    @example(0, 0, 1, 0, 0, 1)
+    @example(0, 1, 1, 0, 0, 1)
+    @example(0, 1, -1, 0, 0, 1)
+    @given(st.integers(0, 2**256 - 1), st.integers(0, 2**256 - 1),
+           st.sampled_from([1, -1]),   st.integers(0, 2**256 - 1),
+           st.integers(0, 2**256 - 1), st.sampled_from([1, -1]))
+    @settings(suppress_health_check=[HealthCheck.filter_too_much])
+    def test_add_asm(self, x1, z1, sign1, x2, z2, sign2):
+        (x1, y1, z1), point1 = make_ge(x1, z1, sign1)
+        (x2, y2, z2), point2 = make_ge(x2, z2, sign2)
+        
+        c_point1 = self.encode_ge(x1, y1, z1)
+        c_point2 = self.encode_ge(x2, y2, z2)
+        c_point3 = self.encode_ge(F(0), F(0), F(0))
+        ge_add_asm(c_point3, c_point1, c_point2)
+        actual_x3, actual_y3, actual_z3 = self.decode_ge(c_point3)
+        expected = point1 + point2
+        note("Expected: {}".format(expected))
+        note("Actual: ({} : {} : {})".format(F(actual_x3), F(actual_y3), F(actual_z3)))
+        
+        
+        b = 13318
+        t0 = x1 * x2;       t1 = y1 * y2;       t2 = z1 * z2
+        t3 = x1 + y1;       t4 = x2 + y2;       t3 = t3 * t4
+        t4 = t0 + t1;       t3 = t3 - t4;       t4 = y1 + z1
+        x3 = y2 + z2;       t4 = t4 * x3;       x3 = t1 + t2
+        
+        t4 = t4 - x3;       x3 = x1 + z1;       y3 = x2 + z2 
+        x3 = x3 * y3;       y3 = t0 + t2;       y3 = x3 - y3
+        z3 =  b * t2;       x3 = y3 - z3;       z3 = x3 + x3
+        x3 = x3 + z3;       z3 = t1 - x3;       x3 = t1 + x3
+        
+        y3 =  b * y3;       t1 = t2 + t2;       t2 = t1 + t2
+        y3 = y3 - t2;       y3 = y3 - t0;       t1 = y3 + y3
+        y3 = t1 + y3;       t1 = t0 + t0;       t0 = t1 + t0
+        t0 = t0 - t2;       t1 = t4 * y3;       t2 = t0 * y3;  
+        
+        y3 = x3 * z3;       y3 = y3 + t2;       x3 = x3 * t3
+        x3 = x3 - t1;       z3 = z3 * t4;       t1 = t3 * t0
+        z3 = z3 + t1
+        
+        self.assertEqual(F(actual_x3), x3)
+        self.assertEqual(F(actual_y3), y3)
+        self.assertEqual(F(actual_z3), z3)
+        
 def make_fe10(limbs):
     h = (ctypes.c_uint64 * 10)(0)
     for i, limb in enumerate(limbs):

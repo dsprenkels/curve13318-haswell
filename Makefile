@@ -14,7 +14,8 @@ C_SRCS :=   fe10.c \
             scalarmult.c
 ASM_SRCS := fe10x4_carry.asm \
             fe10x4_carry_test.asm \
-            fe10x4_mul_test.asm
+            fe10x4_mul_test.asm \
+            ge_add_test.asm
 OBJS :=     ${ASM_SRCS:.asm=.o} ${C_SRCS:.c=.o}
 
 all: libcurve13318.so

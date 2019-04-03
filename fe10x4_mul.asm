@@ -305,7 +305,6 @@
     fe10x4_carry_store %1
     
     %pop fe10x4_mul_ctx
-% error
 %endmacro
 
 %macro fe10x4_mul_consts 0
