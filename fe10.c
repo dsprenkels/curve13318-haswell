@@ -137,14 +137,117 @@ void fe10_mul(fe10 h, const fe10 f_orig, const fe10 g_orig)
     h[8] += f2_9 * g19_9;
     h[9] += f[9] * g[0];
 
-    // Carry immediately, this will be optimized later
+    // Carry immediately, this will be optimized in assembly
     fe10_carry(h);
 }
 
-void fe10_square(fe10 h, const fe10 f)
+void fe10_square(fe10 h, const fe10 f_orig)
 {
-    // TODO(dsprenkels) Implement this function
-    fe10_mul(h, f, f);
+    fe10 f;
+    for (unsigned int i = 0; i < 10; i++) f[i] = f_orig[i];
+
+    // Precompute (19*f_5, ..., 19*f_9)
+    const uint64_t f19_5 = 19*f[5];
+    const uint64_t f19_6 = 19*f[6];
+    const uint64_t f19_7 = 19*f[7];
+    const uint64_t f19_8 = 19*f[8];
+    const uint64_t f19_9 = 19*f[9];
+
+    // Precompute (2*f_0, ..., 2*f_9)
+    const uint64_t f2_0 = 2*f[0];
+    const uint64_t f2_1 = 2*f[1];
+    const uint64_t f2_2 = 2*f[2];
+    const uint64_t f2_3 = 2*f[3];
+    const uint64_t f2_4 = 2*f[4];
+    const uint64_t f2_5 = 2*f[5];
+    const uint64_t f2_6 = 2*f[6];
+    const uint64_t f2_7 = 2*f[7];
+    const uint64_t f2_8 = 2*f[8];
+    const uint64_t f2_9 = 2*f[9];
+    
+    // Precompute (4*f_1, 4*f_3, ... 4*f_9)
+    const uint64_t f4_1 = 2*f2_1;
+    const uint64_t f4_3 = 2*f2_3;
+    const uint64_t f4_5 = 2*f2_5;
+    const uint64_t f4_7 = 2*f2_7;
+
+    // Round 1/10
+    h[0] = f[0] * f[0];
+    h[1] = f2_0 * f[1];
+    h[2] = f2_0 * f[2];
+    h[3] = f2_0 * f[3];
+    h[4] = f2_0 * f[4];
+    h[5] = f2_0 * f[5];
+    h[6] = f2_0 * f[6];
+    h[7] = f2_0 * f[7];
+    h[8] = f2_0 * f[8];
+    h[9] = f2_0 * f[9];
+    
+    // Round 2/10
+    h[0] += f4_1 * f19_9;
+    h[2] += f2_1 * f[1];
+    h[3] += f2_1 * f[2];
+    h[4] += f4_1 * f[3];
+    h[5] += f2_1 * f[4];
+    h[6] += f4_1 * f[5];
+    h[7] += f2_1 * f[6];
+    h[8] += f4_1 * f[7];
+    h[9] += f2_1 * f[8];
+    
+    // Round 3/10
+    h[0] += f2_2 * f19_8;
+    h[1] += f2_2 * f19_9;
+    h[4] += f[2] * f[2];
+    h[5] += f2_2 * f[3];
+    h[6] += f2_2 * f[4];
+    h[7] += f2_2 * f[5];
+    h[8] += f2_2 * f[6];
+    h[9] += f2_2 * f[7];
+
+    // Round 4/10
+    h[0] += f4_3 * f19_7;
+    h[1] += f2_3 * f19_8;
+    h[2] += f4_3 * f19_9;
+    h[6] += f2_3 * f[3];
+    h[7] += f2_3 * f[4];
+    h[8] += f4_3 * f[5];
+    h[9] += f2_3 * f[6];
+    
+    // Round 5/10
+    h[0] += f2_4 * f19_6;
+    h[1] += f2_4 * f19_7;
+    h[2] += f2_4 * f19_8;
+    h[3] += f2_4 * f19_9;
+    h[8] += f[4] * f[4];
+    h[9] += f2_4 * f[5];
+
+    // Round 6/10
+    h[0] += f2_5 * f19_5;
+    h[1] += f2_5 * f19_6;
+    h[2] += f4_5 * f19_7;
+    h[3] += f2_5 * f19_8;
+    h[4] += f4_5 * f19_9;
+    
+    // Round 7/10
+    h[2] += f[6] * f19_6;
+    h[3] += f2_6 * f19_7;
+    h[4] += f2_6 * f19_8;
+    h[5] += f2_6 * f19_9;
+
+    // Round 8/10
+    h[4] += f2_7 * f19_7;
+    h[5] += f2_7 * f19_8;
+    h[6] += f4_7 * f19_9;
+    
+    // Round 9/10
+    h[6] += f[8] * f19_8;
+    h[7] += f2_8 * f19_9;
+    
+    // Round 10/10
+    h[8] += f2_9 * f19_9;
+    
+    // Carry immediately, this will be optimized in assembly
+    fe10_carry(h);
 }
 
 void fe10_carry(fe10 z)

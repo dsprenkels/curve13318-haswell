@@ -2,8 +2,9 @@ CC :=       clang
 
 NASM :=	    nasm -g -f elf64 -F dwarf
 
-CFLAGS :=   -m64 -std=c99 -pedantic -Wall -Wshadow -Wpointer-arith -Wcast-qual \
-            -Wstrict-prototypes -Wmissing-prototypes -fPIC -g -O3
+CFLAGS :=   -m64 -std=c99 -march=haswell -pedantic -Wall -Wshadow \
+            -Wpointer-arith -Wcast-qual -Wstrict-prototypes \
+            -Wmissing-prototypes -fPIC -g -O3
 
 C_SRCS :=   fe10.c \
             fe10_frombytes.c \

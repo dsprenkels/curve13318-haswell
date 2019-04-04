@@ -1,4 +1,4 @@
-; Curve addition for E : y^2 = x^3 - 3*x + 13318
+; Point addition for E : y^2 = x^3 - 3*x + 13318
 ;
 ; Author: Amber Sprenkels <amber@electricdusk.com>
 
@@ -17,7 +17,7 @@ crypto_scalarmult_curve13318_avx2_ge_add_asm:
     ;   - [rdx]: Second operand -- ( x2 : y2 : z2 )
     ;
     ; Output:
-    ;   - [rdi]: Sum of the two inputs
+    ;   - [rdi]: Sum of the two inputs -- ( x3 : y3 : z3 )
     ;
     push r8
     push r9
@@ -25,8 +25,6 @@ crypto_scalarmult_curve13318_avx2_ge_add_asm:
     push r11
     push r12
     push r13
-    push rbp
-    mov rbp, rsp
     and rsp, -32
     sub rsp, 6*10*32
     
@@ -100,6 +98,10 @@ crypto_scalarmult_curve13318_avx2_ge_add_asm:
         ; TODO(dsprenkels) This block has enough latency, that we don't need the interleaving
         ; carry chain here. We would do good to put a non-interleaved carry chain at the end
         ; of this block.
+        ; TODO(dsprenkels) Moreover, just as the previous block, in this block it looks like the
+        ; front-end cannot keep up with the back-end. So after having done the partial carry chain,
+        ; we may be able to precompute some of the multiply. However, note that due to extra
+        ; introduced latency, this could actually slow down this part.
     
         mov r9, qword [t2 + 32*i + 8]           ; v1
         mov r11, qword [t2 + 32*i + 24]         ; v3
@@ -155,7 +157,7 @@ crypto_scalarmult_curve13318_avx2_ge_add_asm:
         %assign i (i + 1) % 10
     %endrep
 
-    fe10x4_carry_body
+    fe10x4_carry_body ; See TODO note above previous block
     %assign i 0
     %rep 10
         vmovdqa yword [t2 + 32*i], ymm%[i]          ; t2 = [v34, v24, v31, v23]
@@ -190,8 +192,8 @@ crypto_scalarmult_curve13318_avx2_ge_add_asm:
     fe10x4_mul_body t3, t2, t5                  ; compute [v42, v39, v35, v41]
     
     ; TODO(dsprenkels) Interleave this loop s.t. we need less registers
-    vmovdqa xmm15, oword [rel .const_237P_237P + 16]
-    vmovdqa xmm14, oword [rel .const_237P_237P + 32]
+    vmovdqa xmm15, oword [rel .const_2p37P_2p37P + 16]
+    vmovdqa xmm14, oword [rel .const_2p37P_2p37P + 32]
     %assign i 0
     %rep 10
         %if i == 0
@@ -204,7 +206,7 @@ crypto_scalarmult_curve13318_avx2_ge_add_asm:
         
         vpermq ymm13, ymm%[i], 0b00011011       ; [v41, v35, v39, v42]
         %if i == 0
-            vpaddq xmm12, xmm%[i], oword [rel .const_237P_237P]
+            vpaddq xmm12, xmm%[i], oword [rel .const_2p37P_2p37P]
         %elif i % 2 == 1
             vpaddq xmm12, xmm%[i], xmm15
         %else
@@ -216,7 +218,7 @@ crypto_scalarmult_curve13318_avx2_ge_add_asm:
 
         %assign i (i + 1) % 10
     %endrep
-    ; TODO(dsprenkels) Implement xmm-specific carry
+    ; TODO(dsprenkels) Implement xmm-specific carry?
     fe10x4_carry_body    
     %assign i 0
     %rep 10
@@ -229,18 +231,8 @@ crypto_scalarmult_curve13318_avx2_ge_add_asm:
         %assign i (i + 1) % 10
     %endrep
 
-    ; ; BEGIN DEBUG SNIPPET
-    ; vpermq ymm0, ymm11, 0b11111111
-    ; vpermq ymm1, ymm4, 0b11111111
-    ; vmovq rax, xmm0
-    ; mov qword [x3 + i*8], rax
-    ; vmovq rax, xmm1
-    ; mov qword [x3 + j*8], rax
-    ; ; END DEBUG SNIPPET
-
     %pop ge_add_ctx
     mov rsp, rbp
-    pop rbp
     pop r13
     pop r12
     pop r11
@@ -259,7 +251,7 @@ times 4 dq 0x3FFFFED0
 times 4 dq 0x1FFFFFF0
 times 4 dq 0x3FFFFFF0
 align 16, db 0
-.const_237P_237P:
+.const_2p37P_2p37P:
 times 2 dq 0x7FFFFDA000000000
 times 2 dq 0x3FFFFFE000000000
 times 2 dq 0x7FFFFFE000000000
