@@ -55,6 +55,8 @@ fe10x4_carry = curve13318.crypto_scalarmult_curve13318_avx2_fe10x4_carry
 fe10x4_carry.argtypes = [ctypes.c_uint64 * 40]
 fe10x4_mul = curve13318.crypto_scalarmult_curve13318_avx2_fe10x4_mul_asm
 fe10x4_mul.argtypes = [ctypes.c_uint64 * 40] * 3
+fe10x4_square = curve13318.crypto_scalarmult_curve13318_avx2_fe10x4_square_asm
+fe10x4_square.argtypes = [ctypes.c_uint64 * 40] * 2
 
 ge_add_asm = curve13318.crypto_scalarmult_curve13318_avx2_ge_add_asm
 ge_add_asm.argtypes = [ctypes.c_uint64 * 30] * 3
@@ -206,6 +208,20 @@ class TestFE10x4(unittest.TestCase):
         actual = fe10x4_val(vz, lane)
         expected = fe10_val(limbs_x) * fe10_val(limbs_y)
         note("mul returned: {}".format([hex(x) for x in vz[lane::4]]))
+        # note("actual value:   0x{:32X}".format(F(actual)))
+        # note("expected value: 0x{:32X}".format(F(expected)))
+        self.assertEqual(F(actual), F(expected))
+
+    @given(st.lists(st.integers(0, 2**27 - 1), min_size=10, max_size=10),
+           st.integers(0, 3))
+    def test_square(self, limbs_x, lane):
+        vx = make_fe10x4(limbs_x, lane)
+        vz = make_fe10x4([], lane)
+        note("square got:      {} ** 2".format([hex(x) for x in vx[lane::4]]))
+        fe10x4_square(vz, vx)
+        actual = fe10x4_val(vz, lane)
+        expected = fe10_val(limbs_x) ** 2
+        note("square returned: {}".format([hex(x) for x in vz[lane::4]]))
         # note("actual value:   0x{:32X}".format(F(actual)))
         # note("expected value: 0x{:32X}".format(F(expected)))
         self.assertEqual(F(actual), F(expected))

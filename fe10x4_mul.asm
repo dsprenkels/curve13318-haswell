@@ -8,7 +8,7 @@
 %include "fe10x4_carry.asm"
 
 %macro fe10x4_mul_body 3
-    ; The multipliction in this routine is based on the multiplication as described in [NeonCrypto].
+    ; The multiplication in this routine is based on the multiplication as described in [NeonCrypto].
     ; Tl;dr. We precompute in parallel:
     ;   - (19*g_1, ..., 19*g_9)
     ;   - (2*f_1, 2*f_3, ... 2*f_9)
@@ -18,6 +18,9 @@
     ;   - %1: Operand `f`
     ;   - %2: Operand `g`
     ;   - %3: 224 bytes of usable stack space
+    ;
+    ; Output:
+    ;   - ymm{0-9}: Result `h`
     ;
     ; Useful reciprocal throughputs:
     ;   - pmuludq:     1.0 cycle @ p0
@@ -44,7 +47,7 @@
     %push fe10x4_mul_body_ctx
     
     ; round 1/10
-    vmovdqa ymm15, yword [%1 + 0*32]
+    vmovdqa ymm15, yword [%1 + 0*32]            ; load f[0]
     vpmuludq ymm0, ymm15, yword [%2 + 0*32]
     vpmuludq ymm1, ymm15, yword [%2 + 1*32]
     vpmuludq ymm2, ymm15, yword [%2 + 2*32]
