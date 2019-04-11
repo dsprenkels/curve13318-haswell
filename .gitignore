@@ -54,9 +54,6 @@ Module.symvers
 Mkfile.old
 dkms.conf
 
-# Hypothesis example cases
-.hypothesis
-
 # Compiled Python files
 *.pyc
 
