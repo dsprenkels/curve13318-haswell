@@ -304,8 +304,7 @@
     %push fe10x4_mul_ctx
     
     fe10x4_mul_body %2, %3, %4
-    fe10x4_carry_body
-    fe10x4_carry_store %1
+    fe10x4_carry_body_store %1
     
     %pop fe10x4_mul_ctx
 %endmacro

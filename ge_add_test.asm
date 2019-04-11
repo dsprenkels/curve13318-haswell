@@ -19,12 +19,12 @@ crypto_scalarmult_curve13318_avx2_ge_add_asm:
     ; Output:
     ;   - [rdi]: Sum of the two inputs -- ( x3 : y3 : z3 )
     ;
-    push r8
-    push r9
     push r10
     push r11
     push r12
     push r13
+    push rbp
+    mov rbp, rsp
     and rsp, -32
     sub rsp, 6*10*32
     
@@ -151,8 +151,22 @@ crypto_scalarmult_curve13318_avx2_ge_add_asm:
         vmovq xmm14, r8                         ; [v24, ??]
         vpunpcklqdq xmm%[i], xmm%[i], xmm14     ; [v34, v24]
         vinserti128 ymm%[i], ymm%[i], xmm15, 1  ; [v34, v24, v31, v23]
-        vpbroadcastq ymm15, qword [rel .const_232P + j*8]                              
-        vpaddq ymm%[i], ymm%[i], ymm15
+
+        %if i == 0
+            vpbroadcastq ymm13, qword [rel .const_2p32P + 8*0]
+            %assign ymm2p32P 13
+        %elif i == 1
+            vpbroadcastq ymm12, qword [rel .const_2p32P + 8*1]
+            %assign ymm2p32P 12
+        %elif i == 2
+            vpbroadcastq ymm13, qword [rel .const_2p32P + 8*1]
+            %assign ymm2p32P 13
+        %elif i % 2 == 1
+            %assign ymm2p32P 12
+        %else
+            %assign ymm2p32P 13
+        %endif        
+        vpaddq ymm%[i], ymm%[i], ymm%[ymm2p32P]
     
         %assign i (i + 1) % 10
     %endrep
@@ -232,13 +246,12 @@ crypto_scalarmult_curve13318_avx2_ge_add_asm:
     %endrep
 
     %pop ge_add_ctx
-    mov rsp, rbp
     pop r13
     pop r12
     pop r11
     pop r10
-    pop r9
-    pop r8
+    mov rsp, rbp
+    pop rbp
     ret
 
 section .rodata
@@ -256,7 +269,7 @@ times 2 dq 0x7FFFFDA000000000
 times 2 dq 0x3FFFFFE000000000
 times 2 dq 0x7FFFFFE000000000
 align 8, db 0
-.const_232P:
+.const_2p32P:
 dq 0x3FFFFED00000000
 dq 0x1FFFFFF00000000
 dq 0x3FFFFFF00000000

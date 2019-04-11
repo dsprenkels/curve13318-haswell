@@ -53,6 +53,8 @@ ge_add.argtypes = [ctypes.c_uint64 * 30] * 3
 
 fe10x4_carry = curve13318.crypto_scalarmult_curve13318_avx2_fe10x4_carry
 fe10x4_carry.argtypes = [ctypes.c_uint64 * 40]
+fe10x4_carry2 = curve13318.crypto_scalarmult_curve13318_avx2_fe10x4_carry2
+fe10x4_carry2.argtypes = [ctypes.c_uint64 * 40]
 fe10x4_mul = curve13318.crypto_scalarmult_curve13318_avx2_fe10x4_mul_asm
 fe10x4_mul.argtypes = [ctypes.c_uint64 * 40] * 3
 fe10x4_square = curve13318.crypto_scalarmult_curve13318_avx2_fe10x4_square_asm
@@ -60,6 +62,8 @@ fe10x4_square.argtypes = [ctypes.c_uint64 * 40] * 2
 
 ge_add_asm = curve13318.crypto_scalarmult_curve13318_avx2_ge_add_asm
 ge_add_asm.argtypes = [ctypes.c_uint64 * 30] * 3
+ge_double_asm = curve13318.crypto_scalarmult_curve13318_avx2_ge_double_asm
+ge_double_asm.argtypes = [ctypes.c_uint64 * 30] * 2
 
 class TestFE10(unittest.TestCase):
     @given(st.lists(st.integers(0, 2**63 - 1), min_size=10, max_size=10))
@@ -182,6 +186,13 @@ class TestFE10x4(unittest.TestCase):
     
     @given(st.lists(st.integers(0, 2**63 - 1), min_size=10, max_size=10), st.integers(0, 3))
     def test_carry(self, limbs, lane):
+        self.do_test_carry(limbs, lane, fe10x4_carry)
+
+    @given(st.lists(st.integers(0, 2**63 - 1), min_size=10, max_size=10), st.integers(0, 3))
+    def test_carry2(self, limbs, lane):
+        self.do_test_carry(limbs, lane, fe10x4_carry2)
+    
+    def do_test_carry(self, limbs, lane, fn):
         vz = make_fe10x4(limbs, lane)
         note("carry got:      {}".format([hex(x) for x in vz[lane::4]]))
         fe10x4_carry(vz)
@@ -386,6 +397,46 @@ class TestGE(unittest.TestCase):
         z3 = z3 + z3;
         self.assertEqual(E([x3, y3, z3]), 2*point)
 
+    @example(0, 0, 1)
+    @example(0, 1, 1)
+    @example(0, 1, -1)
+    @given(st.integers(0, 2**256 - 1), st.integers(0, 2**256 - 1),
+           st.sampled_from([1, -1]))
+    @settings(suppress_health_check=[HealthCheck.filter_too_much])
+    def test_double_asm(self, x, z, sign):
+        (x, y, z), point = make_ge(x, z, sign)
+        
+        c_point = self.encode_ge(x, y, z)
+        c_point3 = self.encode_ge(F(0), F(0), F(0))
+        ge_double_asm(c_point3, c_point)
+        actual_x3, actual_y3, actual_z3 = self.decode_ge(c_point3)
+        expected = 2*point
+        note("Expected: {}".format(expected))
+        note("Actual: ({} : {} : {})".format(F(actual_x3), F(actual_y3), F(actual_z3)))
+        # note("c_point: (Y = {})".format([x for x in c_point[0:10]]))
+
+        b = 13318
+        t0 =  x *  x;       t1 =  y *  y;       t2 =  z *  z
+        t3 =  x *  y;       t3 = t3 + t3;       z3 =  x *  z
+        z3 = z3 + z3;       y3 =  b * t2;       y3 = y3 - z3; ref = y3;
+        
+        x3 = y3 + y3;       y3 = x3 + y3;       x3 = t1 - y3
+        y3 = t1 + y3;       y3 = x3 * y3;       x3 = x3 * t3
+        t3 = t2 + t2;       t2 = t2 + t3;       z3 =  b * z3
+        
+        z3 = z3 - t2;       z3 = z3 - t0;       t3 = z3 + z3
+        z3 = z3 + t3;       t3 = t0 + t0;       t0 = t3 + t0
+        t0 = t0 - t2;       t0 = t0 * z3;       y3 = y3 + t0
+        
+        t0 =  y *  z;       t0 = t0 + t0;       z3 = t0 * z3
+        x3 = x3 - z3;       z3 = t0 * t1;       z3 = z3 + z3
+        z3 = z3 + z3;
+        
+        self.assertEqual(F(actual_x3), x3)
+        self.assertEqual(F(actual_y3), y3)
+        self.assertEqual(F(actual_z3), z3)
+
+
     @example(0, 0, 1, 0, 0, 1)
     @example(0, 1, 1, 0, 0, 1)
     @example(0, 1, -1, 0, 0, 1)
@@ -462,8 +513,7 @@ class TestGE(unittest.TestCase):
         expected = point1 + point2
         note("Expected: {}".format(expected))
         note("Actual: ({} : {} : {})".format(F(actual_x3), F(actual_y3), F(actual_z3)))
-        
-        
+
         b = 13318
         t0 = x1 * x2;       t1 = y1 * y2;       t2 = z1 * z2
         t3 = x1 + y1;       t4 = x2 + y2;       t3 = t3 * t4
