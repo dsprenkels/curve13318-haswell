@@ -493,7 +493,6 @@ class TestGE(unittest.TestCase):
         z3 = z3 + t1
         self.assertEqual(E([x3, y3, z3]), point1 + point2)
 
-    @unittest.skip('Only for debugging')
     @example(0, 0, 1, 0, 0, 1)
     @example(0, 1, 1, 0, 0, 1)
     @example(0, 1, -1, 0, 0, 1)

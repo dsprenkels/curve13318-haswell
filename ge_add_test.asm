@@ -1,4 +1,4 @@
-; Point addition for E : y^2 = x^3 - 3*x + 13318
+; Curve addition for E : y^2 = x^3 - 3*x + 13318
 ;
 ; Author: Amber Sprenkels <amber@electricdusk.com>
 
@@ -17,8 +17,10 @@ crypto_scalarmult_curve13318_avx2_ge_add_asm:
     ;   - [rdx]: Second operand -- ( x2 : y2 : z2 )
     ;
     ; Output:
-    ;   - [rdi]: Sum of the two inputs -- ( x3 : y3 : z3 )
+    ;   - [rdi]: Sum of the two inputs
     ;
+    push r8
+    push r9
     push r10
     push r11
     push r12
@@ -74,16 +76,10 @@ crypto_scalarmult_curve13318_avx2_ge_add_asm:
         vpblendd ymm9, ymm9, ymm8, 0b00000011       ; [v15, x2, y2, z2]
         vmovdqa yword [t1 + 32*i], ymm9             ; t1 = [v15, x2, y2, z2]
 
-        ; [2019-01-22] Checked v14
-        ; [2019-01-22] Checked v15
         %assign i (i + 1) % 10
     %endrep
 
     fe10x4_mul t2, t0, t1, t5                   ; compute [v16, v1, v2, v3]
-    ; [2019-01-22] Checked v16
-    ; [2019-01-22] Checked v1
-    ; [2019-01-22] Checked v2
-    ; [2019-01-22] Checked v3
     
     %assign i 0
     %rep 10
@@ -98,10 +94,6 @@ crypto_scalarmult_curve13318_avx2_ge_add_asm:
         ; TODO(dsprenkels) This block has enough latency, that we don't need the interleaving
         ; carry chain here. We would do good to put a non-interleaved carry chain at the end
         ; of this block.
-        ; TODO(dsprenkels) Moreover, just as the previous block, in this block it looks like the
-        ; front-end cannot keep up with the back-end. So after having done the partial carry chain,
-        ; we may be able to precompute some of the multiply. However, note that due to extra
-        ; introduced latency, this could actually slow down this part.
     
         mov r9, qword [t2 + 32*i + 8]           ; v1
         mov r11, qword [t2 + 32*i + 24]         ; v3
@@ -139,11 +131,6 @@ crypto_scalarmult_curve13318_avx2_ge_add_asm:
         lea r9, [2*r9 + r9]                     ; compute v33
         sub r9, r13                             ; compute v34
 
-        ; [2019-02-11] Checked v34       
-        ; [2019-02-11] Checked v31       
-        ; [2019-02-11] Checked v24
-        ; [2019-02-11] Checked v23
-
         vmovq xmm15, rax                        ; [v31, ??]
         vmovq xmm14, r10                        ; [v23, ??]
         vpunpcklqdq xmm15, xmm15, xmm14         ; [v31, v23]
@@ -151,27 +138,13 @@ crypto_scalarmult_curve13318_avx2_ge_add_asm:
         vmovq xmm14, r8                         ; [v24, ??]
         vpunpcklqdq xmm%[i], xmm%[i], xmm14     ; [v34, v24]
         vinserti128 ymm%[i], ymm%[i], xmm15, 1  ; [v34, v24, v31, v23]
-
-        %if i == 0
-            vpbroadcastq ymm13, qword [rel .const_2p32P + 8*0]
-            %assign ymm2p32P 13
-        %elif i == 1
-            vpbroadcastq ymm12, qword [rel .const_2p32P + 8*1]
-            %assign ymm2p32P 12
-        %elif i == 2
-            vpbroadcastq ymm13, qword [rel .const_2p32P + 8*1]
-            %assign ymm2p32P 13
-        %elif i % 2 == 1
-            %assign ymm2p32P 12
-        %else
-            %assign ymm2p32P 13
-        %endif        
-        vpaddq ymm%[i], ymm%[i], ymm%[ymm2p32P]
+        vpbroadcastq ymm15, qword [rel .const_2p32P + j*8]                              
+        vpaddq ymm%[i], ymm%[i], ymm15
     
         %assign i (i + 1) % 10
     %endrep
 
-    fe10x4_carry_body ; See TODO note above previous block
+    fe10x4_carry_body
     %assign i 0
     %rep 10
         vmovdqa yword [t2 + 32*i], ymm%[i]          ; t2 = [v34, v24, v31, v23]
@@ -182,11 +155,6 @@ crypto_scalarmult_curve13318_avx2_ge_add_asm:
     %endrep
     fe10x4_mul_body t3, t4, t5                  ; compute [v36, v37, v6, v11]
     fe10x4_carry_body
-
-    ; [2019-02-12] Checked v36
-    ; [2019-02-12] Checked v37
-    ; [2019-02-12] Checked v6
-    ; [2019-02-12] Checked v11
     
     %assign i 2
     %rep 10
@@ -232,7 +200,7 @@ crypto_scalarmult_curve13318_avx2_ge_add_asm:
 
         %assign i (i + 1) % 10
     %endrep
-    ; TODO(dsprenkels) Implement xmm-specific carry?
+    ; TODO(dsprenkels) Implement xmm-specific carry
     fe10x4_carry_body    
     %assign i 0
     %rep 10
@@ -246,12 +214,14 @@ crypto_scalarmult_curve13318_avx2_ge_add_asm:
     %endrep
 
     %pop ge_add_ctx
+    mov rsp, rbp
+    pop rbp
     pop r13
     pop r12
     pop r11
     pop r10
-    mov rsp, rbp
-    pop rbp
+    pop r9
+    pop r8
     ret
 
 section .rodata
