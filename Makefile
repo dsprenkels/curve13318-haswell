@@ -1,5 +1,3 @@
-CC :=       clang
-
 NASM :=	    nasm -g -f elf64 -F dwarf
 
 CFLAGS :=   -m64 -std=c99 -march=haswell -pedantic -Wall -Wshadow \
@@ -19,7 +17,10 @@ ASM_SRCS := fe10x4_carry.asm \
             fe10x4_square_test.asm \
             ge_double_test.asm \
             ge_add_test.asm
-OBJS :=     ${ASM_SRCS:.asm=.o} ${C_SRCS:.c=.o}
+S_SRCS :=   fe51_mul.S \
+            fe51_nsquare.S \
+            fe51_pack.S
+OBJS :=     ${ASM_SRCS:.asm=.o} ${S_SRCS:.S=.o} ${C_SRCS:.c=.o}
 
 all: libcurve13318.so
 
@@ -43,5 +44,9 @@ clean:
 %.d: %.c
 	$(CC) $(CFLAGS) -M $< >$@
 
+%.d: %.S
+	$(CC) $(CFLAGS) -M $< >$@
+
 include $(C_SRCS:%.c=%.d)
 include $(ASM_SRCS:%.asm=%.d)
+include $(S_SRCS:%.S=%.d)
