@@ -29,7 +29,7 @@ crypto_scalarmult_curve13318_avx2_ge_double_asm:
     push rbp
     mov rbp, rsp
     and rsp, -32
-    sub rsp, 6*10*32
+    sub rsp, 5*10*32
     
     %push ge_double_ctx
     %xdefine x3         rdi
@@ -42,8 +42,7 @@ crypto_scalarmult_curve13318_avx2_ge_double_asm:
     %xdefine t1         rsp + 1*10*32
     %xdefine t2         rsp + 2*10*32
     %xdefine t3         rsp + 3*10*32
-    %xdefine t4         rsp + 4*10*32
-    %xdefine t5         rsp + 5*10*32
+    %xdefine t5         rsp + 4*10*32
 
     %assign i 0
     %rep 10
@@ -53,25 +52,34 @@ crypto_scalarmult_curve13318_avx2_ge_double_asm:
         ; down the back-end.
         ; For example: all diagonals, or adjacent terms.
     
-        vpbroadcastq ymm0, qword [x + i*8]          ; [X, X, X, X]
-        vpbroadcastq ymm1, qword [y + i*8]          ; [Y, Y, Y, Y]
-        vpbroadcastq ymm2, qword [z + i*8]          ; [Z, Z, Z, Z]
+        vpbroadcastq ymm14, qword [x + i*8]          ; [X, X, X, X]
+        vpbroadcastq ymm13, qword [y + i*8]          ; [Y, Y, Y, Y]
+        vpbroadcastq ymm12, qword [z + i*8]          ; [Z, Z, Z, Z]
     
-        vpaddq ymm3, ymm0, ymm2                     ; [X+Z, X+Z, X+Z, X+Z]
-        vpblendd ymm5, ymm3, ymm0, 0b00001100       ; [X+Z, X, X+Z, X+Z]
-        vpblendd ymm6, ymm2, ymm1, 0b00110000       ; [Z, Z, Y, Z]
-        vpblendd ymm5, ymm5, ymm6, 0b11110000       ; [X+Z, X, Y, Z]
-        vmovdqa [t0 + 32*i], ymm5                   ; t0 = [X+Z, X, Y, Z]
+        vpaddq ymm11, ymm14, ymm12                   ; [X+Z, X+Z, X+Z, X+Z]
+        vpblendd ymm11, ymm11, ymm14, 0b00001100     ; [X+Z, X, X+Z, X+Z]
+        vpblendd ymm10, ymm12, ymm13, 0b00110000     ; [Z, Z, Y, Z]
+        vpblendd ymm11, ymm11, ymm10, 0b11110000     ; [X+Z, X, Y, Z]
+        vmovdqa [t0 + 32*i], ymm11                   ; t0 = [X+Z, X, Y, Z]
+        
+        ; Precompute first multiplication round
+        %if i == 0
+            vpmuludq ymm%[i], ymm11, ymm11
+            vpaddq ymm15, ymm11, ymm11
+        %else
+            vpmuludq ymm%[i], ymm15, ymm11
+        %endif
     
-        vpaddq ymm1, ymm1, ymm1                     ; [2Y, 2Y, 2Y, 2Y]
-        vmovdqa [t2 + 32*i], ymm1                   ; t2 = [2Y, 2Y, 2Y, 2Y]
-        vpblendd ymm0, ymm0, ymm2, 0b00110011       ; [Z, X, Z, X]
-        vmovdqa [t3 + 32*i], ymm0                   ; t3 = [Z, X, Z, X]
+        vpaddq ymm13, ymm13, ymm13                   ; [2Y, 2Y, 2Y, 2Y]
+        vmovdqa [t2 + 32*i], ymm13                   ; t2 = [2Y, 2Y, 2Y, 2Y]
+        vpblendd ymm14, ymm14, ymm12, 0b00110011     ; [Z, X, Z, X]
+        vmovdqa [t3 + 32*i], ymm14                   ; t3 = [Z, X, Z, X]
     
         %assign i (i + 1) % 10
     %endrep
-    
-    fe10x4_square t1, t0, t5    ; compute [X^2 + Z^2 - 2XZ, v1, v2, v3]
+
+    fe10x4_square_body_skip_first_round t0, t5       ; compute [X^2 + Z^2 - 2XZ, v1, v2, v3]
+    fe10x4_carry_body_store t1
     
     %assign i 0
     %rep 10
@@ -139,16 +147,18 @@ crypto_scalarmult_curve13318_avx2_ge_double_asm:
     ; will burn ~10 cycles to compute Y3.
     ;
     
+    vmovdqa ymm15, yword [t1 + 0*32]            ; load f[0]
     %assign i 2
     %rep 10
-        vpermilpd xmm15, xmm%[i], 0b11          ; v14
-        vpaddq xmm%[i], xmm%[i], xmm15          ; compute v27
-        vmovq qword [y3 + 8*i], xmm%[i]         ; store y3
+        vpermilpd xmm14, xmm%[i], 0b11          ; v14
+        vpaddq xmm14, xmm%[i], xmm14            ; compute v27
+        vpmuludq ymm%[i], ymm15, yword [t2 + i*32]
+        vmovq qword [y3 + 8*i], xmm14           ; store y3
     
         %assign i (i + 1) % 10
     %endrep
     
-    fe10x4_mul_body t1, t2, t5                  ; compute [v30, v15, v32, ??]
+    fe10x4_mul_body_skip_first_round t1, t2, t5 ; compute [v30, v15, v32, ??]
     fe10x4_carry_body
     
     ; TODO(dsprenkels) If we add a bogus limb to the memory where Z3 is stored,

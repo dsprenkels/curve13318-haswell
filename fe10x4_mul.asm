@@ -300,6 +300,250 @@
     %pop fe10x4_mul_body_ctx
 %endmacro
 
+%macro fe10x4_mul_body_skip_first_round 3
+    %push fe10x4_mul_body_skip_first_round_ctx
+
+    ; round 2/10
+    vmovdqa ymm15, yword [%1 + 1*32]            ; load f[1]
+    vpaddq ymm14, ymm15, ymm15                  ; compute 2*f[1]
+    vpbroadcastq ymm13, qword [rel .const_19]
+    vpmuludq ymm12, ymm13, yword [%2 + 9*32]    ; compute 19*g[9]
+    vmovdqa yword [%3 + 6*32], ymm12            ; spill 19*g[9]
+
+    vpmuludq ymm10, ymm14, ymm12
+    vpaddq ymm0, ymm0, ymm10
+    vpmuludq ymm10, ymm15, yword [%2 + 0*32]
+    vpaddq ymm1, ymm1, ymm10
+    vpmuludq ymm10, ymm14, yword [%2 + 1*32]
+    vpaddq ymm2, ymm2, ymm10
+    vpmuludq ymm10, ymm15, yword [%2 + 2*32]
+    vpaddq ymm3, ymm3, ymm10
+    vpmuludq ymm10, ymm14, yword [%2 + 3*32]
+    vpaddq ymm4, ymm4, ymm10
+    vpmuludq ymm10, ymm15, yword [%2 + 4*32]
+    vpaddq ymm5, ymm5, ymm10
+    vpmuludq ymm10, ymm14, yword [%2 + 5*32]
+    vpaddq ymm6, ymm6, ymm10
+    vpmuludq ymm10, ymm15, yword [%2 + 6*32]
+    vpaddq ymm7, ymm7, ymm10
+    vpmuludq ymm10, ymm14, yword [%2 + 7*32]
+    vpaddq ymm8, ymm8, ymm10
+    vpmuludq ymm10, ymm15, yword [%2 + 8*32]
+    vpaddq ymm9, ymm9, ymm10
+
+    ; round 3/10
+    vmovdqa ymm15, yword [%1 + 2*32]            ; load f[2]
+    vpmuludq ymm11, ymm13, yword [%2 + 8*32]    ; compute 19*g[8]
+    vmovdqa yword [%3 + 5*32], ymm11            ; spill 19*g[8]
+
+    vpmuludq ymm10, ymm15, ymm11
+    vpaddq ymm0, ymm0, ymm10
+    vpmuludq ymm10, ymm15, ymm12
+    vpaddq ymm1, ymm1, ymm10
+    vpmuludq ymm10, ymm15, yword [%2 + 0*32]
+    vpaddq ymm2, ymm2, ymm10
+    vpmuludq ymm10, ymm15, yword [%2 + 1*32]
+    vpaddq ymm3, ymm3, ymm10
+    vpmuludq ymm10, ymm15, yword [%2 + 2*32]
+    vpaddq ymm4, ymm4, ymm10
+    vpmuludq ymm10, ymm15, yword [%2 + 3*32]
+    vpaddq ymm5, ymm5, ymm10
+    vpmuludq ymm10, ymm15, yword [%2 + 4*32]
+    vpaddq ymm6, ymm6, ymm10
+    vpmuludq ymm10, ymm15, yword [%2 + 5*32]
+    vpaddq ymm7, ymm7, ymm10
+    vpmuludq ymm10, ymm15, yword [%2 + 6*32]
+    vpaddq ymm8, ymm8, ymm10    
+    vpmuludq ymm10, ymm15, yword [%2 + 7*32]
+    vpaddq ymm9, ymm9, ymm10
+
+    ; Round 4/10
+    vmovdqa ymm15, yword [%1 + 3*32]            ; load f[3]
+    vpaddq ymm14, ymm15, ymm15                  ; compute 2*f[3]             
+    vpmuludq ymm12, ymm13, yword [%2 + 7*32]    ; compute 19*g[7]
+    vmovdqa yword [%3 + 4*32], ymm12            ; spill 19*g[7]
+
+    vpmuludq ymm10, ymm14, ymm12
+    vpaddq ymm0, ymm0, ymm10
+    vpmuludq ymm10, ymm15, ymm11
+    vpaddq ymm1, ymm1, ymm10
+    vpmuludq ymm10, ymm14, yword [%3 + 6*32]
+    vpaddq ymm2, ymm2, ymm10
+    vpmuludq ymm10, ymm15, yword [%2 + 0*32]
+    vpaddq ymm3, ymm3, ymm10
+    vpmuludq ymm10, ymm14, yword [%2 + 1*32]
+    vpaddq ymm4, ymm4, ymm10
+    vpmuludq ymm10, ymm15, yword [%2 + 2*32]
+    vpaddq ymm5, ymm5, ymm10
+    vpmuludq ymm10, ymm14, yword [%2 + 3*32]
+    vpaddq ymm6, ymm6, ymm10
+    vpmuludq ymm10, ymm15, yword [%2 + 4*32]
+    vpaddq ymm7, ymm7, ymm10
+    vpmuludq ymm10, ymm14, yword [%2 + 5*32]
+    vpaddq ymm8, ymm8, ymm10
+    vpmuludq ymm10, ymm15, yword [%2 + 6*32]
+    vpaddq ymm9, ymm9, ymm10
+
+    ; Round 5/10
+    vmovdqa ymm15, yword [%1 + 4*32]            ; load f[4]
+    vpmuludq ymm11, ymm13, yword [%2 + 6*32]    ; compute 19*g[6]
+    vmovdqa yword [%3 + 3*32], ymm11            ; spill 19*g[6]
+
+    vpmuludq ymm10, ymm15, ymm11
+    vpaddq ymm0, ymm0, ymm10
+    vpmuludq ymm10, ymm15, ymm12
+    vpaddq ymm1, ymm1, ymm10
+    vpmuludq ymm10, ymm15, yword [%3 + 5*32]
+    vpaddq ymm2, ymm2, ymm10
+    vpmuludq ymm10, ymm15, yword [%3 + 6*32]
+    vpaddq ymm3, ymm3, ymm10
+    vpmuludq ymm10, ymm15, yword [%2 + 0*32]
+    vpaddq ymm4, ymm4, ymm10
+    vpmuludq ymm10, ymm15, yword [%2 + 1*32]
+    vpaddq ymm5, ymm5, ymm10
+    vpmuludq ymm10, ymm15, yword [%2 + 2*32]
+    vpaddq ymm6, ymm6, ymm10
+    vpmuludq ymm10, ymm15, yword [%2 + 3*32]
+    vpaddq ymm7, ymm7, ymm10
+    vpmuludq ymm10, ymm15, yword [%2 + 4*32]
+    vpaddq ymm8, ymm8, ymm10
+    vpmuludq ymm10, ymm15, yword [%2 + 5*32]
+    vpaddq ymm9, ymm9, ymm10
+
+    ; Round 6/10
+    vmovdqa ymm15, yword [%1 + 5*32]            ; load f[5]
+    vpaddq ymm14, ymm15, ymm15                  ; compute 2*f[5]         
+    vpmuludq ymm12, ymm13, yword [%2 + 5*32]    ; compute 19*g[5] 
+    vmovdqa yword [%3 + 2*32], ymm12            ; spill 19*g[5]
+
+    vpmuludq ymm10, ymm14, ymm12
+    vpaddq ymm0, ymm0, ymm10
+    vpmuludq ymm10, ymm15, ymm11
+    vpaddq ymm1, ymm1, ymm10
+    vpmuludq ymm10, ymm14, yword [%3 + 4*32]
+    vpaddq ymm2, ymm2, ymm10
+    vpmuludq ymm10, ymm15, yword [%3 + 5*32]
+    vpaddq ymm3, ymm3, ymm10
+    vpmuludq ymm10, ymm14, yword [%3 + 6*32]
+    vpaddq ymm4, ymm4, ymm10
+    vpmuludq ymm10, ymm15, yword [%2 + 0*32]
+    vpaddq ymm5, ymm5, ymm10
+    vpmuludq ymm10, ymm14, yword [%2 + 1*32]
+    vpaddq ymm6, ymm6, ymm10
+    vpmuludq ymm10, ymm15, yword [%2 + 2*32]
+    vpaddq ymm7, ymm7, ymm10
+    vpmuludq ymm10, ymm14, yword [%2 + 3*32]
+    vpaddq ymm8, ymm8, ymm10
+    vpmuludq ymm10, ymm15, yword [%2 + 4*32]
+    vpaddq ymm9, ymm9, ymm10
+
+    ; Round 7/10
+    vmovdqa ymm15, yword [%1 + 6*32]            ; load f[6]
+    vpmuludq ymm11, ymm13, yword [%2 + 4*32]    ; compute 19*g[4]
+    vmovdqa yword [%3 + 1*32], ymm11            ; spill 19*g[4]
+
+    vpmuludq ymm10, ymm15, ymm11
+    vpaddq ymm0, ymm0, ymm10
+    vpmuludq ymm10, ymm15, ymm12
+    vpaddq ymm1, ymm1, ymm10
+    vpmuludq ymm10, ymm15, yword [%3 + 3*32]
+    vpaddq ymm2, ymm2, ymm10
+    vpmuludq ymm10, ymm15, yword [%3 + 4*32]
+    vpaddq ymm3, ymm3, ymm10
+    vpmuludq ymm10, ymm15, yword [%3 + 5*32]
+    vpaddq ymm4, ymm4, ymm10
+    vpmuludq ymm10, ymm15, yword [%3 + 6*32]
+    vpaddq ymm5, ymm5, ymm10
+    vpmuludq ymm10, ymm15, yword [%2 + 0*32]
+    vpaddq ymm6, ymm6, ymm10
+    vpmuludq ymm10, ymm15, yword [%2 + 1*32]
+    vpaddq ymm7, ymm7, ymm10
+    vpmuludq ymm10, ymm15, yword [%2 + 2*32]
+    vpaddq ymm8, ymm8, ymm10
+    vpmuludq ymm10, ymm15, yword [%2 + 3*32]
+    vpaddq ymm9, ymm9, ymm10
+
+    ; Round 8/10
+    vmovdqa ymm15, yword [%1 + 7*32]            ; load f[7]
+    vpaddq ymm14, ymm15, ymm15                  ; compute 2*f[7]         
+    vpmuludq ymm12, ymm13, yword [%2 + 3*32]    ; compute 19*g[8]
+    vmovdqa yword [%3 + 0*32], ymm12
+
+    vpmuludq ymm10, ymm14, ymm12
+    vpaddq ymm0, ymm0, ymm10
+    vpmuludq ymm10, ymm15, ymm11
+    vpaddq ymm1, ymm1, ymm10
+    vpmuludq ymm10, ymm14, yword [%3 + 2*32]
+    vpaddq ymm2, ymm2, ymm10
+    vpmuludq ymm10, ymm15, yword [%3 + 3*32]
+    vpaddq ymm3, ymm3, ymm10
+    vpmuludq ymm10, ymm14, yword [%3 + 4*32]
+    vpaddq ymm4, ymm4, ymm10
+    vpmuludq ymm10, ymm15, yword [%3 + 5*32]
+    vpaddq ymm5, ymm5, ymm10
+    vpmuludq ymm10, ymm14, yword [%3 + 6*32]
+    vpaddq ymm6, ymm6, ymm10
+    vpmuludq ymm10, ymm15, yword [%2 + 0*32]
+    vpaddq ymm7, ymm7, ymm10
+    vpmuludq ymm10, ymm14, yword [%2 + 1*32]
+    vpaddq ymm8, ymm8, ymm10
+    vpmuludq ymm10, ymm15, yword [%2 + 2*32]
+    vpaddq ymm9, ymm9, ymm10
+
+    ; Round 9/10
+    vmovdqa ymm15, yword [%1 + 8*32]            ; load f[8]
+    vpmuludq ymm11, ymm13, yword [%2 + 2*32]    ; compute 19*g[2]
+
+    vpmuludq ymm10, ymm15, ymm11
+    vpaddq ymm0, ymm0, ymm10
+    vpmuludq ymm10, ymm15, ymm12
+    vpaddq ymm1, ymm1, ymm10
+    vpmuludq ymm10, ymm15, yword [%3 + 1*32]
+    vpaddq ymm2, ymm2, ymm10
+    vpmuludq ymm10, ymm15, yword [%3 + 2*32]
+    vpaddq ymm3, ymm3, ymm10
+    vpmuludq ymm10, ymm15, yword [%3 + 3*32]
+    vpaddq ymm4, ymm4, ymm10
+    vpmuludq ymm10, ymm15, yword [%3 + 4*32]
+    vpaddq ymm5, ymm5, ymm10
+    vpmuludq ymm10, ymm15, yword [%3 + 5*32]
+    vpaddq ymm6, ymm6, ymm10
+    vpmuludq ymm10, ymm15, yword [%3 + 6*32]
+    vpaddq ymm7, ymm7, ymm10
+    vpmuludq ymm10, ymm15, yword [%2 + 0*32]
+    vpaddq ymm8, ymm8, ymm10
+    vpmuludq ymm10, ymm15, yword [%2 + 1*32]
+    vpaddq ymm9, ymm9, ymm10
+
+    ; Round 10/10
+    vmovdqa ymm15, yword [%1 + 9*32]            ; load f[9]
+    vpaddq ymm14, ymm15, ymm15                  ; compute 2*f[9]         
+    vpmuludq ymm12, ymm13, yword [%2 + 1*32]    ; compute 19*g[1]
+
+    vpmuludq ymm10, ymm14, ymm12
+    vpaddq ymm0, ymm0, ymm10
+    vpmuludq ymm10, ymm15, ymm11
+    vpaddq ymm1, ymm1, ymm10
+    vpmuludq ymm10, ymm14, yword [%3 + 0*32]
+    vpaddq ymm2, ymm2, ymm10
+    vpmuludq ymm10, ymm15, yword [%3 + 1*32]
+    vpaddq ymm3, ymm3, ymm10
+    vpmuludq ymm10, ymm14, yword [%3 + 2*32]
+    vpaddq ymm4, ymm4, ymm10
+    vpmuludq ymm10, ymm15, yword [%3 + 3*32]
+    vpaddq ymm5, ymm5, ymm10
+    vpmuludq ymm10, ymm14, yword [%3 + 4*32]
+    vpaddq ymm6, ymm6, ymm10
+    vpmuludq ymm10, ymm15, yword [%3 + 5*32]
+    vpaddq ymm7, ymm7, ymm10
+    vpmuludq ymm10, ymm14, yword [%3 + 6*32]
+    vpaddq ymm8, ymm8, ymm10
+    vpmuludq ymm10, ymm15, yword [%2 + 0*32]
+    vpaddq ymm9, ymm9, ymm10
+    
+    %pop fe10x4_mul_body_skip_first_round_ctx
+%endmacro
+
 %macro fe10x4_mul 4
     %push fe10x4_mul_ctx
     
