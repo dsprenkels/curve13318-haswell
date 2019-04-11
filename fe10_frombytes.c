@@ -26,7 +26,7 @@ static uint64_t load_4(const uint8_t *in)
   return result;
 }
 
-void fe10_frombytes(fe10 z, const uint8_t *s)
+void fe10_frombytes(fe10 *z, const uint8_t *s)
 {
   uint64_t z0 = load_4(s);
   uint64_t z1 = load_3(s + 4) << 6;
@@ -61,14 +61,14 @@ void fe10_frombytes(fe10 z, const uint8_t *s)
   carry6 = z6 >> 26; z7 += carry6; z6 &= 0x3FFFFFF;
   carry8 = z8 >> 26; z9 += carry8; z8 &= 0x3FFFFFF;
 
-  z[0] = z0;
-  z[1] = z1;
-  z[2] = z2;
-  z[3] = z3;
-  z[4] = z4;
-  z[5] = z5;
-  z[6] = z6;
-  z[7] = z7;
-  z[8] = z8;
-  z[9] = z9;
+  z->v[0] = z0;
+  z->v[1] = z1;
+  z->v[2] = z2;
+  z->v[3] = z3;
+  z->v[4] = z4;
+  z->v[5] = z5;
+  z->v[6] = z6;
+  z->v[7] = z7;
+  z->v[8] = z8;
+  z->v[9] = z9;
 }

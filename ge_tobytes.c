@@ -11,10 +11,10 @@ void ge_tobytes(uint8_t *s, ge p)
     fe10 x_affine, y_affine, z_inverse;
 
     // Convert to affine coordinates
-    fe10_invert(z_inverse, p[2]);
-    fe10_mul(x_affine, p[0], z_inverse);
-    fe10_mul(y_affine, p[1], z_inverse);
+    fe10_invert(&z_inverse, &p[2]);
+    fe10_mul(&x_affine, &p[0], &z_inverse);
+    fe10_mul(&y_affine, &p[1], &z_inverse);
 
-    fe10_tobytes(&s[ 0], x_affine);
-    fe10_tobytes(&s[32], y_affine);
+    fe10_tobytes(&s[ 0], &x_affine);
+    fe10_tobytes(&s[32], &y_affine);
 }
