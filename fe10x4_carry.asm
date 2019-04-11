@@ -2,8 +2,8 @@
 ;
 ; Author: Amber Sprenkels <amber@electricdusk.com>
 
-%ifndef FE10_CARRY_
-%define FE10_CARRY_
+%ifndef CURVE13318_FE10_CARRY_ASM_
+%define CURVE13318_FE10_CARRY_ASM_
 
 %macro fe10x4_carry_load 1
     ; load field element
