@@ -9,13 +9,35 @@ point on E is represented by its projective coordinates, i.e. (X : Y : Z).
 #define CURVE13318_GE_H_
 
 #include "fe10.h"
+#include <unistd.h>
 
 typedef fe10 ge[3];
 
+#define ge_zero crypto_scalarmult_curve13318_avx2_ge_zero
+#define ge_copy crypto_scalarmult_curve13318_avx2_ge_copy
 #define ge_frombytes crypto_scalarmult_curve13318_avx2_ge_frombytes
 #define ge_tobytes crypto_scalarmult_curve13318_avx2_ge_tobytes
 #define ge_double crypto_scalarmult_curve13318_avx2_ge_double
 #define ge_add crypto_scalarmult_curve13318_avx2_ge_add
+
+/*
+Write all zeros to p
+*/
+static inline void ge_zero(ge p)
+{
+    for (unsigned int i = 0; i < 3; i++) {
+        fe10_zero(&p[i]);
+    }
+}
+
+/*
+Copy a group element
+*/
+static inline void ge_copy(ge dest, const ge src) {
+    for (size_t i = 0; i < 3; i++) {
+        fe10_copy(&dest[i], &src[i]);
+    }
+}
 
 
 /*

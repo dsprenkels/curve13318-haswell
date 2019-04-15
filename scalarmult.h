@@ -1,7 +1,7 @@
 #ifndef CURVE13318_SCALARMULT_H_
 #define CURVE13318_SCALARMULT_H_
 
-#define crypto_scalarmult crypto_scalarmult_curve13318_ref_scalarmult
+#define crypto_scalarmult crypto_scalarmult_curve13318_avx2_scalarmult
 
 #include <inttypes.h>
 

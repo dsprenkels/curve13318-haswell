@@ -16,7 +16,8 @@ ASM_SRCS := fe10x4_carry.asm \
             fe10x4_mul_test.asm \
             fe10x4_square_test.asm \
             ge_double_test.asm \
-            ge_add_test.asm
+            ge_add_test.asm \
+            select_test.asm
 S_SRCS :=   fe51_mul.S \
             fe51_nsquare.S \
             fe51_pack.S

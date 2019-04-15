@@ -27,29 +27,33 @@ else:
 # Load shared libcurve13318 library
 curve13318 = ctypes.CDLL(os.path.join(os.path.abspath('.'), 'libcurve13318.so'))
 
+# Define types
+fe10_type = ctypes.c_uint64 * 10
+ge_type = ctypes.c_uint64 * 30
+
 # Define functions
 fe10_frombytes = curve13318.crypto_scalarmult_curve13318_avx2_fe10_frombytes
-fe10_frombytes.argtypes = [ctypes.c_uint64 * 10, ctypes.c_ubyte * 32]
+fe10_frombytes.argtypes = [fe10_type, ctypes.c_ubyte * 32]
 fe10_tobytes = curve13318.crypto_scalarmult_curve13318_avx2_fe10_tobytes
-fe10_tobytes.argtypes = [ctypes.c_ubyte * 32, ctypes.c_uint64 * 10]
+fe10_tobytes.argtypes = [ctypes.c_ubyte * 32, fe10_type]
 fe10_carry = curve13318.crypto_scalarmult_curve13318_avx2_fe10_carry
-fe10_carry.argtypes = [ctypes.c_uint64 * 10]
+fe10_carry.argtypes = [fe10_type]
 fe10_mul = curve13318.crypto_scalarmult_curve13318_avx2_fe10_mul
-fe10_mul.argtypes = [ctypes.c_uint64 * 10] * 3
+fe10_mul.argtypes = [fe10_type] * 3
 fe10_square = curve13318.crypto_scalarmult_curve13318_avx2_fe10_square
-fe10_square.argtypes = [ctypes.c_uint64 * 10] * 2
+fe10_square.argtypes = [fe10_type] * 2
 fe10_invert = curve13318.crypto_scalarmult_curve13318_avx2_fe10_invert
-fe10_invert.argtypes = [ctypes.c_uint64 * 10] * 2
+fe10_invert.argtypes = [fe10_type] * 2
 fe10_reduce = curve13318.crypto_scalarmult_curve13318_avx2_fe10_reduce
-fe10_reduce.argtypes = [ctypes.c_uint64 * 10]
+fe10_reduce.argtypes = [fe10_type]
 ge_frombytes = curve13318.crypto_scalarmult_curve13318_avx2_ge_frombytes
-ge_frombytes.argtypes = [ctypes.c_uint64 * 30, ctypes.c_ubyte * 64]
+ge_frombytes.argtypes = [ge_type, ctypes.c_ubyte * 64]
 ge_tobytes = curve13318.crypto_scalarmult_curve13318_avx2_ge_tobytes
-ge_tobytes.argtypes = [ctypes.c_ubyte * 64, ctypes.c_uint64 * 30]
+ge_tobytes.argtypes = [ctypes.c_ubyte * 64, ge_type]
 ge_double = curve13318.crypto_scalarmult_curve13318_avx2_ge_double
-ge_double.argtypes = [ctypes.c_uint64 * 30] * 2
+ge_double.argtypes = [ge_type] * 2
 ge_add = curve13318.crypto_scalarmult_curve13318_avx2_ge_add
-ge_add.argtypes = [ctypes.c_uint64 * 30] * 3
+ge_add.argtypes = [ge_type] * 3
 
 fe10x4_carry = curve13318.crypto_scalarmult_curve13318_avx2_fe10x4_carry
 fe10x4_carry.argtypes = [ctypes.c_uint64 * 40]
@@ -61,9 +65,12 @@ fe10x4_square = curve13318.crypto_scalarmult_curve13318_avx2_fe10x4_square_asm
 fe10x4_square.argtypes = [ctypes.c_uint64 * 40] * 2
 
 ge_add_asm = curve13318.crypto_scalarmult_curve13318_avx2_ge_add_asm
-ge_add_asm.argtypes = [ctypes.c_uint64 * 30] * 3
+ge_add_asm.argtypes = [ge_type] * 3
 ge_double_asm = curve13318.crypto_scalarmult_curve13318_avx2_ge_double_asm
-ge_double_asm.argtypes = [ctypes.c_uint64 * 30] * 2
+ge_double_asm.argtypes = [ge_type] * 2
+
+select = curve13318.crypto_scalarmult_curve13318_avx2_select
+select.argtypes = [ge_type, ctypes.c_uint64, ge_type * 16]
 
 class TestFE10(unittest.TestCase):
     @given(st.lists(st.integers(0, 2**63 - 1), min_size=10, max_size=10))
@@ -251,10 +258,10 @@ class TestGE(unittest.TestCase):
             shift += mask_width
 
         stashed = []
-        p = (ctypes.c_uint64 * 30)(0)
+        p = ge_type(0)
         while ctypes.addressof(p) % 32 != 0:
             stashed.append(p)
-            p = (ctypes.c_uint64 * 30)(0)
+            p = ge_type(0)
             
         for i, limb in enumerate(x_limbs + y_limbs + z_limbs):
             p[i] = limb
@@ -310,7 +317,7 @@ class TestGE(unittest.TestCase):
                 expected = -1
 
         c_bytes = self.ge_to_bytes(x.lift(), y.lift())
-        c_point = (ctypes.c_uint64 * 30)(0)
+        c_point = ge_type(0)
         ret = ge_frombytes(c_point, c_bytes)
         actual_x, actual_y, actual_z = self.decode_ge(c_point)
         self.assertEqual(ret, expected)
@@ -359,7 +366,7 @@ class TestGE(unittest.TestCase):
     def test_double(self, x, z, sign):
         (x, y, z), point = make_ge(x, z, sign)
         c_point = self.encode_ge(x, y, z)
-        c_point3 = (ctypes.c_uint64 * 30)(0)
+        c_point3 = ge_type(0)
         ge_double(c_point3, c_point)
         x3, y3, z3 = self.decode_ge(c_point3)
         expected = 2*point
@@ -449,7 +456,7 @@ class TestGE(unittest.TestCase):
         (x2, y2, z2), point2 = make_ge(x2, z2, sign2)
         c_point1 = self.encode_ge(x1, y1, z1)
         c_point2 = self.encode_ge(x2, y2, z2)
-        c_point3 = (ctypes.c_uint64 * 30)(0)
+        c_point3 = ge_type(0)
         ge_add(c_point3, c_point1, c_point2)
         x3, y3, z3 = self.decode_ge(c_point3)
         expected = point1 + point2
@@ -537,8 +544,57 @@ class TestGE(unittest.TestCase):
         self.assertEqual(F(actual_y3), y3)
         self.assertEqual(F(actual_z3), z3)
         
+class TestScalarmult(unittest.TestCase):
+    @given(st.integers(-1, 15), st.one_of(st.none(), st.data()))
+    def test_select(self, idx, random_numbers):
+        dest_c = allocate_aligned(ge_type, 32)
+        ptable_c = allocate_aligned(ge_type * 16, 32)
+        for i,_ in enumerate(ptable_c):
+            for j,_ in enumerate(ptable_c[i]):
+                if random_numbers: 
+                    ptable_c[i][j] = random_numbers.draw(st.integers(0, 2**53-1))
+
+        if idx == -1:
+            # Load neutral element
+            expected = ge_type(0)
+            expected[10] = 1
+            idx = 31
+        else:
+            expected = ptable_c[idx]
+        expected = list(expected)
+
+        select(dest_c, idx, ptable_c)
+        actual = list(dest_c)
+
+        note('idx = %s' % idx)
+        note('expected: %s' % expected)
+        note('actual:   %s' % actual)
+        note('ptable_c: %s' % list(list(x) for x in ptable_c))
+        self.assertEqual(actual, expected)
+        
+def allocate_aligned(ty, align):
+    """
+    Python does not do any aligned allocations by default. At least, not
+    most of the time. The does not seem to be a good API to force an
+    allocation to be aligned, so this function implements one.
+
+    We allocate the type and wait until its address value is divisible by
+    the desired allocation which will happen if we try long enough.
+    """
+    stashed = []
+    cval = ty()
+    for _ in range(1000):
+        if ctypes.addressof(cval) % align == 0:
+            return cval
+
+        # Try until we have a properly aligned array
+        stashed.append(cval) # save the old one or else Python is going to be smart on us
+        cval = ty()
+    else:
+        raise RuntimeError('failed to allocate an aligned piece of ram')
+        
 def make_fe10(limbs):
-    h = (ctypes.c_uint64 * 10)(0)
+    h = (fe10_type)(0)
     for i, limb in enumerate(limbs):
         h[i] = limb
     return h
@@ -564,11 +620,7 @@ def make_fe10x4(limbs, lane):
     assert 0 <= lane < 4
     z = make_fe10(limbs)
     stashed = []
-    vz = (ctypes.c_uint64 * 40)(0)
-    while ctypes.addressof(vz) % 32 != 0:
-        # Try until we have a properly aligned array
-        stashed.append(vz) # save the old one or else Python is going to be smart on us
-        vz = (ctypes.c_uint64 * 40)(0)
+    vz = allocate_aligned(ctypes.c_uint64 * 40, 32)
     for i, limb in enumerate(z):
         vz[4*i + lane] = limb
     return vz

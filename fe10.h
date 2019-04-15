@@ -17,6 +17,7 @@ Bernstein, D. J. & Schwabe, P. Prouff, E. & Schaumont, P. (Eds.)
 
 #include "consts.h"
 #include <inttypes.h>
+#include <unistd.h>
 
 typedef struct {
     uint64_t v[10];
@@ -41,7 +42,7 @@ typedef struct {
 Set a fe10 value to zero
 */
 static inline void fe10_zero(fe10 *z) {
-    for (unsigned int i = 0; i < 10; i++) z->v[i] = 0;
+    for (size_t i = 0; i < 10; i++) z->v[i] = 0;
 }
 
 /*
@@ -49,21 +50,21 @@ Set a fe10 value to one
 */
 static inline void fe10_one(fe10 *z) {
     z->v[0] = 1;
-    for (unsigned int i = 1; i < 10; i++) z->v[i] = 0;
+    for (size_t i = 1; i < 10; i++) z->v[i] = 0;
 }
 
 /*
 Copy a fe10 value to another fe10 type
 */
-static inline void fe10_copy(fe10 *dest, const fe10 *src) {
-    for (unsigned int i = 0; i < 10; i++) dest->v[i] = src->v[i];
+static inline void fe10_copy(fe10 *restrict dest, const fe10 *restrict src) {
+    for (size_t i = 0; i < 10; i++) dest->v[i] = src->v[i];
 }
 
 /*
 Add `rhs` into `z`
 */
 static inline void fe10_add(fe10 *z, fe10 *lhs, fe10 *rhs) {
-    for (unsigned int i = 0; i < 10; i++) z->v[i] = lhs->v[i] + rhs->v[i];
+    for (size_t i = 0; i < 10; i++) z->v[i] = lhs->v[i] + rhs->v[i];
 }
 
 /*
@@ -105,7 +106,7 @@ limbs underflow! Ensure that this is not occurs by adding additional carry
 rippling and using `fe10_add2p`.
 */
 static inline void fe10_sub(fe10 *z, fe10 *lhs, fe10 *rhs) {
-    for (unsigned int i = 0; i < 10; i++) z->v[i] = lhs->v[i] - rhs->v[i];
+    for (size_t i = 0; i < 10; i++) z->v[i] = lhs->v[i] - rhs->v[i];
 }
 
 /*
@@ -154,7 +155,7 @@ static inline void fe10_add_b(fe10 *z) {
 Multiply `z` by 13318
 */
 static inline void fe10_mul_b(fe10 *z, fe10 *op) {
-    for (unsigned int i = 0; i < 10; i++) z->v[i] = op->v[i] * CURVE13318_B;
+    for (size_t i = 0; i < 10; i++) z->v[i] = op->v[i] * CURVE13318_B;
     fe10_carry(z);
 }
 
