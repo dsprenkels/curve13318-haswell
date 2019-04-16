@@ -162,8 +162,6 @@ int scalarmult(uint8_t *out, const uint8_t *key, const uint8_t *in)
 
     // Do double and add scalar multiplication
     ge_zero(q);
-    cmov_neutral(q, -(int64_t)(zeroth_window == 0));
-    cmov(q, ptable[0], -(int64_t)(zeroth_window == 1));
     // crypto_scalarmult_curve13318_avx2_ladder(q, w, ptable);
     ge_tobytes(out, q);
 

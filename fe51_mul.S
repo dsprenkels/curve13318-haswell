@@ -103,8 +103,8 @@
 # qhasm: enter fe51_mul
 .text
 .p2align 5
-.globl crypto_scalarmult_curve13318_ref12_fe51_mul
-crypto_scalarmult_curve13318_ref12_fe51_mul:
+.globl crypto_scalarmult_curve13318_avx2_fe51_mul
+crypto_scalarmult_curve13318_avx2_fe51_mul:
 mov %rsp,%r11
 and $31,%r11
 add $96,%r11
@@ -946,5 +946,5 @@ mov %rdi,%rax
 mov %rsi,%rdx
 ret
 
-.section .rodata:
+.rodata:
 .REDMASK51:   .quad 0x0007FFFFFFFFFFFF

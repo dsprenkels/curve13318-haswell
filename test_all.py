@@ -29,6 +29,7 @@ curve13318 = ctypes.CDLL(os.path.join(os.path.abspath('.'), 'libcurve13318.so'))
 
 # Define types
 fe10_type = ctypes.c_uint64 * 10
+fe51_type = ctypes.c_uint64 * 5
 ge_type = ctypes.c_uint64 * 30
 
 # Define functions
@@ -46,6 +47,10 @@ fe10_invert = curve13318.crypto_scalarmult_curve13318_avx2_fe10_invert
 fe10_invert.argtypes = [fe10_type] * 2
 fe10_reduce = curve13318.crypto_scalarmult_curve13318_avx2_fe10_reduce
 fe10_reduce.argtypes = [fe10_type]
+
+fe51_mul = curve13318.crypto_scalarmult_curve13318_avx2_fe51_mul
+fe51_mul.argtypes = [fe51_type] * 3
+
 ge_frombytes = curve13318.crypto_scalarmult_curve13318_avx2_ge_frombytes
 ge_frombytes.argtypes = [ge_type, ctypes.c_ubyte * 64]
 ge_tobytes = curve13318.crypto_scalarmult_curve13318_avx2_ge_tobytes
@@ -184,6 +189,22 @@ class TestFE10(unittest.TestCase):
         fe10_reduce(f)
         actual = fe10_val(f)
         self.assertEqual(actual, expected)
+
+class TestFE51(unittest.TestCase):
+    @given(st.lists(st.integers(0, 2**52 - 1), min_size=5, max_size=5),
+           st.lists(st.integers(0, 2**52 - 1), min_size=5, max_size=5))
+    def test_mul(self, limbs_x, limbs_y):
+        vx = make_fe51(limbs_x)
+        vy = make_fe51(limbs_y)
+        vz = make_fe51([])
+        note("mul got:      {} * {}".format([hex(x) for x in vx], [hex(x) for x in vy]))
+        fe51_mul(vz, vx, vy)
+        actual = fe51_val(vz)
+        expected = fe51_val(vx) * fe51_val(vy)
+        note("mul returned: {}".format([hex(x) for x in vz]))
+        # note("actual value:   0x{:32X}".format(F(actual)))
+        # note("expected value: 0x{:32X}".format(F(expected)))
+        self.assertEqual(F(actual), F(expected))
 
 class TestFE10x4(unittest.TestCase):
     @given(st.lists(st.integers(0, 2**63 - 1), min_size=10, max_size=10), st.integers(0, 3))
@@ -341,13 +362,16 @@ class TestGE(unittest.TestCase):
     @example(0, 0, 1) # a point at infinity
     @example(0, P, 1)
     @example(0, 2*P, 1)
-    @given(st.integers(0, 2**256 - 1), st.integers(0, 2**256 - 1),
+    @given(st.integers(0, 2**255 - 1), st.integers(0, 2**255 - 1),
            st.sampled_from([1, -1]))
     def test_tobytes(self, x, z, sign):
         (x, y, z), point = make_ge(x, z, sign)
         c_point = self.encode_ge(x, y, z)
         c_bytes = (ctypes.c_ubyte * 64)(0)
         ge_tobytes(c_bytes, c_point)
+        note("point:      %s" % point)
+        note("c_point:    0x%s" % ''.join("%02x" % x for x in c_point))
+        note("c_bytes:    0x%s" % ''.join("%02x" % x for x in c_bytes))
 
         if z != 0:
             expected_x, expected_y = point.xy()
@@ -355,6 +379,10 @@ class TestGE(unittest.TestCase):
             expected_x, expected_y = F(0), F(0)
 
         actual_x, actual_y = self.decode_bytes(c_bytes)
+        note("actual_x:   0x%s" % actual_x.lift().hex())
+        note("expected_x: 0x%s" % expected_x.lift().hex())
+        note("actual_y:   0x%s" % actual_y.lift().hex())
+        note("expected_y: 0x%s" % expected_y.lift().hex())
         self.assertEqual(actual_x, expected_x)
         self.assertEqual(actual_y, expected_y)
 
@@ -594,7 +622,7 @@ def allocate_aligned(ty, align):
         raise RuntimeError('failed to allocate an aligned piece of ram')
         
 def make_fe10(limbs):
-    h = (fe10_type)(0)
+    h = fe10_type(0)
     for i, limb in enumerate(limbs):
         h[i] = limb
     return h
@@ -615,6 +643,20 @@ def fe10_dumps(h):
         exponent -= 25 if i % 2 == 0 else 26
     s += "{}".format(h[0])
     return s
+
+def make_fe51(limbs):
+    h = allocate_aligned(fe51_type, 32)
+    for i, limb in enumerate(limbs):
+        h[i] = limb
+    return h
+
+def fe51_val(h):
+    val = 0
+    exponent = 0
+    for i, limb in enumerate(h):
+        val += limb * 2**exponent
+        exponent += 51
+    return val
 
 def make_fe10x4(limbs, lane):
     assert 0 <= lane < 4

@@ -97,8 +97,8 @@
 
 # qhasm: enter fe51_nsquare
 .p2align 5
-.global crypto_scalarmult_curve13318_ref12_fe51_nsquare
-crypto_scalarmult_curve13318_ref12_fe51_nsquare:
+.global crypto_scalarmult_curve13318_avx2_fe51_nsquare
+crypto_scalarmult_curve13318_avx2_fe51_nsquare:
 mov %rsp,%r11
 and $31,%r11
 add $64,%r11

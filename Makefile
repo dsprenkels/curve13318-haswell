@@ -7,6 +7,7 @@ CFLAGS :=   -m64 -std=c99 -march=haswell -pedantic -Wall -Wshadow \
 C_SRCS :=   fe10.c \
             fe10_frombytes.c \
             fe10_tobytes.c \
+            fe51_invert.c \
             ge.c \
             ge_frombytes.c \
             ge_tobytes.c \

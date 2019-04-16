@@ -3,6 +3,8 @@
 
 static bool ge_affine_point_on_curve(ge p)
 {
+    // TODO(dsprenkels) Use fe51 arithmetic here
+
     // Use the general curve equation to check if this point is on the curve
     // y^2 = x^3 - 3*x + 13318
     uint64_t nonzero = 0;
@@ -12,7 +14,7 @@ static bool ge_affine_point_on_curve(ge p)
     fe10_mul(&rhs, &t0, &p[0]); // x^3
     fe10_zero(&t0);             // 0
     fe10_add2p(&t0);            // 0
-    fe10_sub(&t0, &t0, &p[0]);   // -x
+    fe10_sub(&t0, &t0, &p[0]);  // -x
     fe10_add(&rhs, &rhs, &t0);  // x^3 - x
     fe10_add(&rhs, &rhs, &t0);  // x^3 - 2*x
     fe10_add(&rhs, &rhs, &t0);  // x^3 - 3*x

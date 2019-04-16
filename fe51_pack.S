@@ -4,8 +4,8 @@
 */
 
 .p2align 5
-.global crypto_scalarmult_curve13318_ref12_fe51_pack
-crypto_scalarmult_curve13318_ref12_fe51_pack:
+.global crypto_scalarmult_curve13318_avx2_fe51_pack
+crypto_scalarmult_curve13318_avx2_fe51_pack:
     mov %rsp,%r11
     and $31,%r11
     add $32,%r11
