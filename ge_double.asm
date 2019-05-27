@@ -80,10 +80,15 @@ global crypto_scalarmult_curve13318_avx2_ge_double_asm
         sub r11, r8                                 ; compute v20
         lea r11, [2*r11 + r11]                      ; compute v22
         mov r8, r9                                  ; copy v2
+        mov r13, r9                                 ; copy v2
         sub r8, r12                                 ; compute v12
         add r9, r12                                 ; compute v13
         sub rax, r10                                ; compute v25
         
+        ; Later, for the computation of v33 (through v32), we will need 4*v2
+        shl r13, 2                                  ; compute 4*v2
+        mov qword [t1 + 32*i + 16], r13             ; t1 = [??, v1, 4*v2, v3]
+
         ; The largest bound here is that of v22, which is (not tightly)
         ; v|22| ≤ 0.99*2^43. So we add 2^32*p, which is easily larger, to
         ; wrap the values back to the positive domain.
@@ -98,36 +103,35 @@ global crypto_scalarmult_curve13318_avx2_ge_double_asm
         
         %if i == 0
             vpbroadcastq ymm13, qword [rel .const_2p32P]
-            %assign ymm2p32P 13
+            %assign ymm2p37P 13
         %elif i == 1
             vpbroadcastq ymm12, qword [rel .const_2p32P + 8]
-            %assign ymm2p32P 12
+            %assign ymm2p37P 12
         %elif i == 2
             vpbroadcastq ymm13, qword [rel .const_2p32P + 16]
-            %assign ymm2p32P 13
+            %assign ymm2p37P 13
         %elif i % 2 == 1
-            %assign ymm2p32P 12
+            %assign ymm2p37P 12
         %else
-            %assign ymm2p32P 13
+            %assign ymm2p37P 13
         %endif        
-        vpaddq ymm%[i], ymm%[i], ymm%[ymm2p32P]
+        vpaddq ymm%[i], ymm%[i], ymm%[ymm2p37P]
         
         %assign i (i + 1) % 10
     %endrep
     fe10x4_carry_body_store_owords t2, t3       ; t2 = [v22, v12, 2Y, 2Y]
-                                                ; t3 = [v25, v13, X, Z]
+                                                ; t3 = [v25, v13, Z, X]
                                                 
     fe10x4_mul_body t2, t3, t5                  ; compute [v26, v14, v28, v4]    
     fe10x4_carry_body_store_owords_hipart t1, t2+16
-            ; ymm[] = [v26, v14, v28,  v4]
-            ; t1    = [v28,  v4,  v2,  v3]
-            ; t2    = [v22, v12, v28,  v4]
+            ; ymm[] = [v26, v14,  v28, v4]
+            ; t1    = [v28,  v4, 4*v2, v3]
+            ; t2    = [v22, v12,  v28, v4]
 
     ; At this point we have to wait a small while until the oword stores in the
     ; carry chain can be used again in the multiplication. In the meantime, we
     ; will burn ~10 cycles to compute Y3.
     ;
-
     vmovdqa ymm15, yword [t1 + 0*32]            ; load f[0]
     %assign i 2
     %rep 10
@@ -139,38 +143,45 @@ global crypto_scalarmult_curve13318_avx2_ge_double_asm
         %assign i (i + 1) % 10
     %endrep
 
-    fe10x4_mul_body_skip_first_round t1, t2, t5 ; compute [v30, v15, v32, ??]
-    fe10x4_carry_body
+    fe10x4_mul_body_skip_first_round t1, t2, t5 ; compute [v30, v15, v34, ??]
 
-    ; TODO(dsprenkels) If we add a bogus limb to the memory where Z3 is stored,
-    ; we can use `vextracti128 m, y, i` instead of `vextracti128, x, y, i`,
-    ; which will reduce the pressure on port 5.
     ; TODO(dsprenkels) Inline this piece into the carry chain
-    %assign i 2
+    vxorpd ymm12, ymm12, ymm12
+    %assign i 0
     %rep 10
         %if i == 0
-            vmovdqa xmm15, oword [rel .const_4P]
-            %assign xmm4P 15
-        %elif i == 3
-            vmovdqa xmm14, oword [rel .const_4P + 16]
-            %assign xmm4P 14
+            vmovdqa ymm15, yword [rel .const_2p37P_2p37P_2p37P_2p37P + 0*32]
+            %assign ymm2p37P 15
+        %elif i == 1
+            vmovdqa ymm14, yword [rel .const_2p37P_2p37P_2p37P_2p37P + 1*32]
+            %assign ymm2p37P 14
         %elif i == 2
-            vmovdqa xmm13, oword [rel .const_4P + 32]
-            %assign xmm4P 13
+            vmovdqa ymm13, yword [rel .const_2p37P_2p37P_2p37P_2p37P + 2*32]
+            %assign ymm2p37P 13
         %elif i % 2 == 1
-            %assign xmm4P 14
+            %assign ymm2p37P 14
         %else
-            %assign xmm4P 13
+            %assign ymm2p37P 13
         %endif        
 
-        vpermilpd xmm10, xmm%[i], 0b11      ; v15
-        vpsllq ymm11, ymm%[i], 2            ; compute [??, ??, v34, ??]
-        vpsubq xmm12, xmm%[i], xmm%[xmm4P]  ; force underflow in v30
-        vextracti128 xmm11, ymm11, 1        ; v34
-        vpsubq xmm10, xmm10, xmm12          ; compute v31
-        vmovq qword [z3 + 8*i], xmm11
-        vmovq qword [x3 + 8*i], xmm10
-        
+        vpermq ymm11, ymm%[i], 0b00001001       ; [v15, v34, ??, ??]
+        vpsubq ymm10, ymm%[i], ymm%[ymm2p37P]   ; force underflow in v30
+        vpblendd ymm10, ymm12, ymm10, 0b00000011 ; [v30', 0, 0, 0]
+        vpsubq ymm%[i], ymm11, ymm10            ; [v31, v34, ??, ??]
+
+        %assign i (i + 1) % 10
+    %endrep
+
+    ; TODO(dsprenkels) Maybe implement a xmm-specific carry chain?
+    fe10x4_carry_body
+
+    %assign i 2
+    %rep 10
+        ; TODO(dsprenkels) Look into storing x and z packed together, because
+        ; this store costs us almost 20 cycles.
+        vmovq qword [x3 + 8*i], xmm%[i]
+        vpextrq qword [z3 + 8*i], xmm%[i], 1
+    
         %assign i (i + 1) % 10
     %endrep
 
@@ -178,11 +189,11 @@ global crypto_scalarmult_curve13318_avx2_ge_double_asm
 %endmacro
 
 %macro ge_double_consts 0
-    align 16, db 0
-    .const_4P:
-    times 2 dq 0xFFFFFB4
-    times 2 dq 0x7FFFFFC
-    times 2 dq 0xFFFFFFC
+    align 32, db 0
+    .const_2p37P_2p37P_2p37P_2p37P:
+    times 4 dq 0x7FFFFDA000000000
+    times 4 dq 0x3FFFFFE000000000
+    times 4 dq 0x7FFFFFE000000000
     align 8, db 0
     .const_2p32P:
     dq 0x3FFFFED00000000

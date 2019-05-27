@@ -267,15 +267,17 @@ class TestFE10x4(unittest.TestCase):
 
 class TestGE(unittest.TestCase):
     @staticmethod
-    def encode_ge(x, y, z):
+    def encode_ge(x, y, z, fx=1, fy=None, fz=None):
         """Encode a point in its C representation"""
+        if fy is None: fy = fx
+        if fz is None: fz = fx
         shift = 0
         x_limbs, y_limbs, z_limbs = [0]*10, [0]*10, [0]*10
         for i in range(10):
             mask_width = 26 if i % 2 == 0 else 25
-            x_limbs[i] = (2**mask_width - 1) & (x.lift() >> shift)
-            y_limbs[i] = (2**mask_width - 1) & (y.lift() >> shift)
-            z_limbs[i] = (2**mask_width - 1) & (z.lift() >> shift)
+            x_limbs[i] = fx * ((2**mask_width - 1) & (x.lift() >> shift))
+            y_limbs[i] = fy * ((2**mask_width - 1) & (y.lift() >> shift))
+            z_limbs[i] = fz * ((2**mask_width - 1) & (z.lift() >> shift))
             shift += mask_width
 
         stashed = []
@@ -432,28 +434,37 @@ class TestGE(unittest.TestCase):
         z3 = z3 + z3;
         self.assertEqual(E([x3, y3, z3]), 2*point)
 
-    @example(0, 0, 1)
-    @example(0, 1, 1)
-    @example(0, 1, -1)
-    @given(st.integers(0, 2**256 - 1), st.integers(0, 2**256 - 1),
-           st.sampled_from([1, -1]))
+    @example(0, 0, 1, 1, 1, 1)  
+    @example(0, 1, 1, 1, 1, 1)  
+    @example(0, 1, -1, 1, 1, 1) 
+    @given(st.integers(0, 2**256 - 1),
+           st.integers(0, 2**256 - 1),
+           st.sampled_from([1, -1]),
+           st.integers(1, 2), # s.t. P_1 ≤ 2^27
+           st.integers(1, 2), # s.t. P_1 ≤ 2^27
+           st.integers(1, 2), # s.t. P_1 ≤ 2^27
+    )
     @settings(suppress_health_check=[HealthCheck.filter_too_much])
-    def test_double_asm(self, x, z, sign):
+    def test_double_asm(self, x, z, sign, fx, fy, fz):
+        assume(fx * fz <= 2)
         (x, y, z), point = make_ge(x, z, sign)
-        
-        c_point = self.encode_ge(x, y, z)
+        c_point = self.encode_ge(x, y, z, fx, fy, fz)
         c_point3 = self.encode_ge(F(0), F(0), F(0))
         ge_double_asm(c_point3, c_point)
         actual_x3, actual_y3, actual_z3 = self.decode_ge(c_point3)
         expected = 2*point
         note("Expected: {}".format(expected))
         note("Actual: ({} : {} : {})".format(F(actual_x3), F(actual_y3), F(actual_z3)))
-        # note("c_point: (Y = {})".format([x for x in c_point[0:10]]))
+        # note("c_point: (Y = {})".format([_limb for _limb in c_point[0:10]]))
+
+        x *= fx
+        y *= fy
+        z *= fz
 
         b = 13318
         t0 =  x *  x;       t1 =  y *  y;       t2 =  z *  z
         t3 =  x *  y;       t3 = t3 + t3;       z3 =  x *  z
-        z3 = z3 + z3;       y3 =  b * t2;       y3 = y3 - z3; ref = y3;
+        z3 = z3 + z3;       y3 =  b * t2;       y3 = y3 - z3
         
         x3 = y3 + y3;       y3 = x3 + y3;       x3 = t1 - y3
         y3 = t1 + y3;       y3 = x3 * y3;       x3 = x3 * t3
@@ -471,13 +482,24 @@ class TestGE(unittest.TestCase):
         self.assertEqual(F(actual_y3), y3)
         self.assertEqual(F(actual_z3), z3)
 
+        # Check the bounds for X, Y and Z
+        for limb in c_point3[0:10]:
+            self.assertLessEqual(limb, 1.01 * 2**26)
+        for limb in c_point3[10:20]:
+            self.assertLessEqual(limb, 1.01 * 2**27)
+        for limb in c_point3[20:30]:
+            self.assertLessEqual(limb, 1.01 * 2**26)
 
     @example(0, 0, 1, 0, 0, 1)
     @example(0, 1, 1, 0, 0, 1)
     @example(0, 1, -1, 0, 0, 1)
-    @given(st.integers(0, 2**256 - 1), st.integers(0, 2**256 - 1),
-           st.sampled_from([1, -1]),   st.integers(0, 2**256 - 1),
-           st.integers(0, 2**256 - 1), st.sampled_from([1, -1]))
+    @given(st.integers(0, 2**256 - 1),
+           st.integers(0, 2**256 - 1),
+           st.sampled_from([1, -1]),
+           st.integers(0, 2**256 - 1),
+           st.integers(0, 2**256 - 1),
+           st.sampled_from([1, -1]),
+    ) 
     @settings(suppress_health_check=[HealthCheck.filter_too_much])
     def test_add(self, x1, z1, sign1, x2, z2, sign2):
         (x1, y1, z1), point1 = make_ge(x1, z1, sign1)
@@ -499,9 +521,13 @@ class TestGE(unittest.TestCase):
     @example(0, 0, 1, 0, 0, 1)
     @example(0, 1, 1, 0, 0, 1)
     @example(0, 1, -1, 0, 0, 1)
-    @given(st.integers(0, 2**256 - 1), st.integers(0, 2**256 - 1),
-            st.sampled_from([1, -1]),   st.integers(0, 2**256 - 1),
-            st.integers(0, 2**256 - 1), st.sampled_from([1, -1]))
+    @given(st.integers(0, 2**256 - 1),
+           st.integers(0, 2**256 - 1),
+           st.sampled_from([1, -1]),
+           st.integers(0, 2**256 - 1),
+           st.integers(0, 2**256 - 1),
+           st.sampled_from([1, -1]),
+    )
     @settings(suppress_health_check=[HealthCheck.filter_too_much])
     def test_add_ref(self, x1, z1, sign1, x2, z2, sign2):
         (x1, y1, z1), point1 = make_ge(x1, z1, sign1)
@@ -528,25 +554,46 @@ class TestGE(unittest.TestCase):
         z3 = z3 + t1
         self.assertEqual(E([x3, y3, z3]), point1 + point2)
 
-    @example(0, 0, 1, 0, 0, 1)
-    @example(0, 1, 1, 0, 0, 1)
-    @example(0, 1, -1, 0, 0, 1)
-    @given(st.integers(0, 2**256 - 1), st.integers(0, 2**256 - 1),
-           st.sampled_from([1, -1]),   st.integers(0, 2**256 - 1),
-           st.integers(0, 2**256 - 1), st.sampled_from([1, -1]))
+    @example(0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1)
+    @example(0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1)
+    @example(0, 1, -1, 1, 1, 1, 0, 0, 1, 1, 1, 1)
+    @given(st.integers(0, 2**256 - 1),
+           st.integers(0, 2**256 - 1),
+           st.sampled_from([1, -1]),
+           st.integers(1, 2), # s.t. P_1 ≤ 2^27
+           st.integers(1, 2), # s.t. P_1 ≤ 2^27
+           st.integers(1, 2), # s.t. P_1 ≤ 2^27
+           st.integers(0, 2**256 - 1),
+           st.integers(0, 2**256 - 1),
+           st.sampled_from([1, -1]),
+           st.integers(1, 2), # s.t. P_1 ≤ 2^27
+           st.integers(1, 2), # s.t. P_1 ≤ 2^27
+           st.integers(1, 2), # s.t. P_1 ≤ 2^27
+    )
     @settings(suppress_health_check=[HealthCheck.filter_too_much])
-    def test_add_asm(self, x1, z1, sign1, x2, z2, sign2):
+    def test_add_asm(self, x1, z1, sign1, fx1, fy1, fz1, x2, z2, sign2, fx2, fy2, fz2):
+        assume(fx1 * fy1 * fz1 <= 2)
+        assume(fx2 * fy2 * fz2 <= 2)
+
         (x1, y1, z1), point1 = make_ge(x1, z1, sign1)
         (x2, y2, z2), point2 = make_ge(x2, z2, sign2)
         
-        c_point1 = self.encode_ge(x1, y1, z1)
-        c_point2 = self.encode_ge(x2, y2, z2)
+        c_point1 = self.encode_ge(x1, y1, z1, fx1, fy1, fz1)
+        c_point2 = self.encode_ge(x2, y2, z2, fx2, fy2, fz2)
         c_point3 = self.encode_ge(F(0), F(0), F(0))
         ge_add_asm(c_point3, c_point1, c_point2)
         actual_x3, actual_y3, actual_z3 = self.decode_ge(c_point3)
         expected = point1 + point2
         note("Expected: {}".format(expected))
         note("Actual: ({} : {} : {})".format(F(actual_x3), F(actual_y3), F(actual_z3)))
+
+        # Simulate using larger limbs
+        x1 *= fx1
+        y1 *= fy1
+        z1 *= fz1
+        x2 *= fx2
+        y2 *= fy2
+        z2 *= fz2
 
         b = 13318
         t0 = x1 * x2;       t1 = y1 * y2;       t2 = z1 * z2
@@ -562,15 +609,23 @@ class TestGE(unittest.TestCase):
         y3 =  b * y3;       t1 = t2 + t2;       t2 = t1 + t2
         y3 = y3 - t2;       y3 = y3 - t0;       t1 = y3 + y3
         y3 = t1 + y3;       t1 = t0 + t0;       t0 = t1 + t0
-        t0 = t0 - t2;       t1 = t4 * y3;       t2 = t0 * y3;  
+        t0 = t0 - t2;       t1 = t4 * y3;       t2 = t0 * y3
         
         y3 = x3 * z3;       y3 = y3 + t2;       x3 = x3 * t3
         x3 = x3 - t1;       z3 = z3 * t4;       t1 = t3 * t0
         z3 = z3 + t1
-        
+
         self.assertEqual(F(actual_x3), x3)
         self.assertEqual(F(actual_y3), y3)
         self.assertEqual(F(actual_z3), z3)
+
+        # Check the bounds for X, Y and Z
+        for limb in c_point3[0:10]:
+            self.assertLessEqual(limb, 1.01 * 2**26)
+        for limb in c_point3[10:20]:
+            self.assertLessEqual(limb, 1.01 * 2**27)
+        for limb in c_point3[20:30]:
+            self.assertLessEqual(limb, 1.01 * 2**26)
         
 class TestScalarmult(unittest.TestCase):
     @given(st.integers(-1, 15), st.one_of(st.none(), st.data()))

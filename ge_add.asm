@@ -153,8 +153,8 @@
     fe10x4_mul_body t3, t2, t5                  ; compute [v42, v39, v35, v41]
 
     ; TODO(dsprenkels) Interleave this loop s.t. we need less registers
-    vmovdqa xmm15, oword [rel .const_2p37P_2p37P + 16]
-    vmovdqa xmm14, oword [rel .const_2p37P_2p37P + 32]
+    vmovdqa xmm15, oword [rel .const_2p37P_2p37P + 1*32]
+    vmovdqa xmm14, oword [rel .const_2p37P_2p37P + 2*32]
     %assign i 0
     %rep 10
         %if i == 0
@@ -167,7 +167,7 @@
         
         vpermq ymm13, ymm%[i], 0b00011011       ; [v41, v35, v39, v42]
         %if i == 0
-            vpaddq xmm12, xmm%[i], oword [rel .const_2p37P_2p37P]
+            vpaddq xmm12, xmm%[i], oword [rel .const_2p37P_2p37P + 0*32]
         %elif i % 2 == 1
             vpaddq xmm12, xmm%[i], xmm15
         %else
@@ -184,10 +184,8 @@
     %assign i 0
     %rep 10
         ; TODO(dsprenkels) We can optimize this if we store x and z packed together
-        vmovq rax, xmm%[i]
-        mov qword [z3 + 8*i], rax
-        vpextrq r8, xmm%[i], 1
-        mov qword [x3 + 8*i], r8
+        vmovq qword [z3 + 8*i], xmm%[i]
+        vpextrq qword [x3 + 8*i], xmm%[i], 1
 
         %assign i (i + 1) % 10
     %endrep
@@ -201,11 +199,11 @@
     times 4 dq 0x3FFFFED0
     times 4 dq 0x1FFFFFF0
     times 4 dq 0x3FFFFFF0
-    align 16, db 0
+    align 32, db 0
     .const_2p37P_2p37P:
-    times 2 dq 0x7FFFFDA000000000
-    times 2 dq 0x3FFFFFE000000000
-    times 2 dq 0x7FFFFFE000000000
+    times 4 dq 0x7FFFFDA000000000
+    times 4 dq 0x3FFFFFE000000000
+    times 4 dq 0x7FFFFFE000000000
     align 8, db 0
     .const_2p32P:
     dq 0x3FFFFED00000000
