@@ -13,17 +13,17 @@ global crypto_scalarmult_curve13318_avx2_ge_double_asm
 
 %macro ge_double 3
     %push ge_double_ctx
-    %xdefine x3         rdi
-    %xdefine y3         rdi + 10*8
-    %xdefine z3         rdi + 20*8
-    %xdefine x          rsi
-    %xdefine y          rsi + 10*8
-    %xdefine z          rsi + 20*8
-    %xdefine t0         rsp
-    %xdefine t1         rsp + 1*10*32
-    %xdefine t2         rsp + 2*10*32
-    %xdefine t3         rsp + 3*10*32
-    %xdefine t5         rsp + 4*10*32
+    %xdefine x3         %1
+    %xdefine y3         %1 + 10*8
+    %xdefine z3         %1 + 20*8
+    %xdefine x          %2
+    %xdefine y          %2 + 10*8
+    %xdefine z          %2 + 20*8
+    %xdefine t0         %3
+    %xdefine t1         %3 + 1*10*32
+    %xdefine t2         %3 + 2*10*32
+    %xdefine t3         %3 + 3*10*32
+    %xdefine t5         %3 + 4*10*32
 
     %assign i 0
     %rep 10

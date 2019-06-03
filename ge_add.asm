@@ -58,6 +58,13 @@
         %assign i (i + 1) % 10
     %endrep
 
+    ; fe10x4_carry_load t0
+    ; fe10x4_carry_body
+    ; fe10x4_carry_store t0
+    ; fe10x4_carry_load t1
+    ; fe10x4_carry_body
+    ; fe10x4_carry_store t1
+    
     fe10x4_mul t2, t0, t1, t5                   ; compute [v16, v1, v2, v3]
 
     %assign i 0
@@ -153,8 +160,8 @@
     fe10x4_mul_body t3, t2, t5                  ; compute [v42, v39, v35, v41]
 
     ; TODO(dsprenkels) Interleave this loop s.t. we need less registers
-    vmovdqa xmm15, oword [rel .const_2p37P_2p37P + 1*32]
-    vmovdqa xmm14, oword [rel .const_2p37P_2p37P + 2*32]
+    vmovdqa xmm15, oword [rel .const_2p37P_2p37P_2p37P_2p37P + 1*32]
+    vmovdqa xmm14, oword [rel .const_2p37P_2p37P_2p37P_2p37P + 2*32]
     %assign i 0
     %rep 10
         %if i == 0
@@ -167,7 +174,7 @@
         
         vpermq ymm13, ymm%[i], 0b00011011       ; [v41, v35, v39, v42]
         %if i == 0
-            vpaddq xmm12, xmm%[i], oword [rel .const_2p37P_2p37P + 0*32]
+            vpaddq xmm12, xmm%[i], oword [rel .const_2p37P_2p37P_2p37P_2p37P + 0*32]
         %elif i % 2 == 1
             vpaddq xmm12, xmm%[i], xmm15
         %else
@@ -200,7 +207,7 @@
     times 4 dq 0x1FFFFFF0
     times 4 dq 0x3FFFFFF0
     align 32, db 0
-    .const_2p37P_2p37P:
+    .const_2p37P_2p37P_2p37P_2p37P:
     times 4 dq 0x7FFFFDA000000000
     times 4 dq 0x3FFFFFE000000000
     times 4 dq 0x7FFFFFE000000000

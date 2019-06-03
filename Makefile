@@ -2,7 +2,7 @@ NASM :=	    nasm -g -f elf64 -F dwarf
 
 CFLAGS :=   -m64 -std=c99 -march=haswell -pedantic -Wall -Wshadow \
             -Wpointer-arith -Wcast-qual -Wstrict-prototypes \
-            -Wmissing-prototypes -fPIC -g -O3
+            -Wmissing-prototypes -fPIC -g -O3 -fno-omit-frame-pointer
 
 C_SRCS :=   fe10.c \
             fe10_frombytes.c \
@@ -18,6 +18,7 @@ ASM_SRCS := fe10x4_carry.asm \
             fe10x4_square_test.asm \
             ge_double_test.asm \
             ge_add_test.asm \
+            ladder.asm \
             select_test.asm
 S_SRCS :=   fe51_mul.S \
             fe51_nsquare.S \
@@ -25,6 +26,8 @@ S_SRCS :=   fe51_mul.S \
 OBJS :=     ${ASM_SRCS:.asm=.o} ${S_SRCS:.S=.o} ${C_SRCS:.c=.o}
 
 all: libcurve13318.so
+
+debug: debug.c $(OBJS)
 
 libcurve13318.so: $(OBJS)
 	$(CC) $(CFLAGS) -shared -o $@ $^ $(LDFLAGS) $(LDLIBS)

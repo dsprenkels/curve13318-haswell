@@ -74,6 +74,8 @@ ge_add_asm.argtypes = [ge_type] * 3
 ge_double_asm = curve13318.crypto_scalarmult_curve13318_avx2_ge_double_asm
 ge_double_asm.argtypes = [ge_type] * 2
 
+scalarmult = curve13318.crypto_scalarmult_curve13318_avx2_scalarmult
+scalarmult.argtypes = [ctypes.c_ubyte * 64, ctypes.c_ubyte * 32, ctypes.c_ubyte * 64]
 select = curve13318.crypto_scalarmult_curve13318_avx2_select
 select.argtypes = [ge_type, ctypes.c_uint64, ge_type * 16]
 
@@ -437,8 +439,8 @@ class TestGE(unittest.TestCase):
     @example(0, 0, 1, 1, 1, 1)  
     @example(0, 1, 1, 1, 1, 1)  
     @example(0, 1, -1, 1, 1, 1) 
-    @given(st.integers(0, 2**256 - 1),
-           st.integers(0, 2**256 - 1),
+    @given(st.integers(0, 2**255 - 1),
+           st.integers(0, 2**255 - 1),
            st.sampled_from([1, -1]),
            st.integers(1, 2), # s.t. P_1 ≤ 2^27
            st.integers(1, 2), # s.t. P_1 ≤ 2^27
@@ -557,14 +559,14 @@ class TestGE(unittest.TestCase):
     @example(0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1)
     @example(0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1)
     @example(0, 1, -1, 1, 1, 1, 0, 0, 1, 1, 1, 1)
-    @given(st.integers(0, 2**256 - 1),
-           st.integers(0, 2**256 - 1),
+    @given(st.integers(0, 2**255 - 1),
+           st.integers(0, 2**255 - 1),
            st.sampled_from([1, -1]),
            st.integers(1, 2), # s.t. P_1 ≤ 2^27
            st.integers(1, 2), # s.t. P_1 ≤ 2^27
            st.integers(1, 2), # s.t. P_1 ≤ 2^27
-           st.integers(0, 2**256 - 1),
-           st.integers(0, 2**256 - 1),
+           st.integers(0, 2**255 - 1),
+           st.integers(0, 2**255 - 1),
            st.sampled_from([1, -1]),
            st.integers(1, 2), # s.t. P_1 ≤ 2^27
            st.integers(1, 2), # s.t. P_1 ≤ 2^27
@@ -628,6 +630,76 @@ class TestGE(unittest.TestCase):
             self.assertLessEqual(limb, 1.01 * 2**26)
         
 class TestScalarmult(unittest.TestCase):
+    @staticmethod
+    def encode_k(k):
+        k_bytes = (ctypes.c_ubyte * 32)(0)
+        for i in range(32):
+            k_bytes[i] = (k >> (8*i)) & 0xFF
+        return k_bytes
+    
+    @given(st.integers(0, 2**255 - 1), st.integers(0, 2**256 - 1),
+           st.integers(0, 2**256 - 1), st.sampled_from([1, -1]))
+    @example(0, 1, 0, 1)
+    def test_scalarmult(self, k, x, z, sign):
+        k = 31
+        _, point = make_ge(x, z, sign)
+        note('Initial point: ' + str(point))
+        if point.is_zero():
+            (x, y) = F(0), F(0)
+        else:
+            (x, y) = point.xy()
+        c_bytes_in = TestGE.ge_to_bytes(x.lift(), y.lift())
+        k_bytes = self.encode_k(k)
+        c_bytes_out = (ctypes.c_ubyte * 64)(0)
+        ret = scalarmult(c_bytes_out, k_bytes, c_bytes_in)
+        self.assertEqual(ret, 0)
+        actual = [int(x) for x in c_bytes_out]
+        expected_point = k * point
+        if expected_point.is_zero():
+            expected_x, expected_y = F(0), F(0)
+        else:
+            expected_x, expected_y = expected_point.xy()
+        expected = TestGE.ge_to_bytes(expected_x.lift(), expected_y.lift())
+        expected = [int(x) for x in expected]
+        note('actual:   ' + str([hex(x) for x in actual]))
+        note('expected: ' + str([hex(x) for x in expected]))
+        
+        note('INPUTS:')
+        note('const uint8_t out[64] = {' + ', '.join([hex(x) for x in c_bytes_out]).replace("'", '') + '};')
+        note('const uint8_t key[32] = {' + ', '.join([hex(x) for x in k_bytes]).replace("'", '') + '};')
+        note('const uint8_t in[64] =  {' + ', '.join([hex(x) for x in c_bytes_in]).replace("'", '') + '};')
+        
+        for k2 in range(0, 100):
+            expected2_point = k2 * point
+            if expected2_point.is_zero():
+                expected2_x, expected2_y = F(0), F(0)
+            else:
+                expected2_x, expected2_y = expected2_point.xy()
+            expected2 = TestGE.ge_to_bytes(expected2_x.lift(), expected2_y.lift())
+            expected2 = [int(x) for x in expected2]
+            if actual == expected2:
+                note("MARK: k = {}; k2 = {}; x = {}; expected2 = {}".format(k, k2, x, expected2))
+        
+        self.assertEqual(actual, expected)
+        print("OK")
+
+    @unittest.skip('TODO')
+    @given(st.integers(0, 2**255 - 1), st.integers(0, 2**256 - 1),
+           st.integers(0, 2**256 - 1))
+    @example(0, 0, 0)
+    def test_scalarmult_invalid_point(self, k, x, y):
+        if (x, y) in E or (x, y) == (0, 0):
+            expected = 0
+        else:
+            expected = -1
+        c_bytes_in = TestGE.ge_to_bytes(x, y)
+        k_bytes = self.encode_k(k)
+        c_bytes_out = (ctypes.c_ubyte * 64)(0)
+        ret = scalarmult(c_bytes_out, k_bytes, c_bytes_in)
+        self.assertEqual(ret, expected)
+    
+
+    
     @given(st.integers(-1, 15), st.one_of(st.none(), st.data()))
     def test_select(self, idx, random_numbers):
         dest_c = allocate_aligned(ge_type, 32)

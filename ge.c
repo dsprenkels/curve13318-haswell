@@ -69,6 +69,10 @@ void ge_add(ge p3, const ge p1, const ge p2)
              fe10_mul(&t1, &t3, &t0);
              fe10_add(&z3, &z3, &t1);
 
+    fe10_carry(&x3);
+    fe10_carry(&y3);
+    fe10_carry(&z3);
+
     fe10_copy(&p3[0], &x3);
     fe10_copy(&p3[1], &y3);
     fe10_copy(&p3[2], &z3);
@@ -122,6 +126,10 @@ void ge_double(ge p3, const ge p)
              fe10_mul(&z3, &t0, &t1);
              fe10_add(&z3, &z3, &z3);
              fe10_add(&z3, &z3, &z3);
+
+    fe10_carry(&x3);
+    fe10_carry(&y3);
+    fe10_carry(&z3);
 
     fe10_copy(&p3[0], &x3);
     fe10_copy(&p3[1], &y3);

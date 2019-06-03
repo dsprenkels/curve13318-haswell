@@ -5,7 +5,7 @@
 static void cmov(ge dest, const ge src, uint64_t mask)
 {
     for (unsigned int i = 0; i < 3; i++) {
-        for (unsigned int j = 0; j < 12; j++) {
+        for (unsigned int j = 0; j < 10; j++) {
             dest[i].v[j] |= src[i].v[j] & mask;
         }
     }
@@ -145,7 +145,7 @@ static inline void compute_windows(uint8_t w[51], uint8_t *zeroth_window, const 
     *zeroth_window = ((w[0] >> 5) ^ (w[0] >> 4)) & 0x1;
 }
 
-int scalarmult(uint8_t *out, const uint8_t *key, const uint8_t *in)
+int crypto_scalarmult_curve13318_avx2_scalarmult(uint8_t *out, const uint8_t *key, const uint8_t *in)
 {
     ge p, q;
     ge ptable[16];
@@ -162,7 +162,13 @@ int scalarmult(uint8_t *out, const uint8_t *key, const uint8_t *in)
 
     // Do double and add scalar multiplication
     ge_zero(q);
-    // crypto_scalarmult_curve13318_avx2_ladder(q, w, ptable);
+    cmov_neutral(q, -(int64_t)(zeroth_window == 0));
+    cmov(q, ptable[0], -(int64_t)(zeroth_window == 1));
+    // crypto_scalarmult_curve13318_avx2_ge_double_asm(q, q);
+    crypto_scalarmult_curve13318_avx2_ladder(q, w, ptable);
+    // fe10_carry(&q[0]);
+    // fe10_carry(&q[1]);
+    // fe10_carry(&q[2]);
     ge_tobytes(out, q);
 
     return 0;
