@@ -22,21 +22,21 @@ static void cmov_neutral(ge dest, uint64_t mask)
 static void do_precomputation(ge ptable[16], const ge p)
 {
     ge_copy(ptable[0], p);
-    ge_double(ptable[1], ptable[0]);
-    ge_add(ptable[2], ptable[1], ptable[0]);
-    ge_double(ptable[3], ptable[1]);
-    ge_add(ptable[4], ptable[3], ptable[0]);
-    ge_double(ptable[5], ptable[2]);
-    ge_add(ptable[6], ptable[5], ptable[0]);
-    ge_double(ptable[7], ptable[3]);
-    ge_add(ptable[8], ptable[7], ptable[0]);
-    ge_double(ptable[9], ptable[4]);
-    ge_add(ptable[10], ptable[9], ptable[0]);
-    ge_double(ptable[11], ptable[5]);
-    ge_add(ptable[12], ptable[11], ptable[0]);
-    ge_double(ptable[13], ptable[6]);
-    ge_add(ptable[14], ptable[13], ptable[0]);
-    ge_double(ptable[15], ptable[7]);
+    ge_double_asm(ptable[1], ptable[0]);
+    ge_add_asm(ptable[2], ptable[1], ptable[0]);
+    ge_double_asm(ptable[3], ptable[1]);
+    ge_add_asm(ptable[4], ptable[3], ptable[0]);
+    ge_double_asm(ptable[5], ptable[2]);
+    ge_add_asm(ptable[6], ptable[5], ptable[0]);
+    ge_double_asm(ptable[7], ptable[3]);
+    ge_add_asm(ptable[8], ptable[7], ptable[0]);
+    ge_double_asm(ptable[9], ptable[4]);
+    ge_add_asm(ptable[10], ptable[9], ptable[0]);
+    ge_double_asm(ptable[11], ptable[5]);
+    ge_add_asm(ptable[12], ptable[11], ptable[0]);
+    ge_double_asm(ptable[13], ptable[6]);
+    ge_add_asm(ptable[14], ptable[13], ptable[0]);
+    ge_double_asm(ptable[15], ptable[7]);
 }
 
 // Decode the key bytes into windows and ripple the subtraction carry

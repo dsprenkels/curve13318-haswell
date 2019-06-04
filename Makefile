@@ -13,13 +13,12 @@ C_SRCS :=   fe10.c \
             ge_tobytes.c \
             scalarmult.c
 ASM_SRCS := fe10x4_carry.asm \
-            fe10x4_carry_test.asm \
-            fe10x4_mul_test.asm \
-            fe10x4_square_test.asm \
-            ge_double_test.asm \
-            ge_add_test.asm \
+            fe10x4_mul.asm \
+            fe10x4_square.asm \
+            ge_double.asm \
+            ge_add.asm \
             ladder.asm \
-            select_test.asm
+            select.asm
 S_SRCS :=   fe51_mul.S \
             fe51_nsquare.S \
             fe51_pack.S
@@ -41,7 +40,7 @@ check: libcurve13318.so
 
 .PHONY: clean
 clean:
-	$(RM) *.o *.gch *.a *.out *.so *.d *.lst
+	$(RM) *.o *.gch *.a *.out *.so *.d *.lst debug
 
 %.d: %.asm
 	$(NASM) -MT $(patsubst %.d,%.o,$@) -M $< >$@

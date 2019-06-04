@@ -2,9 +2,9 @@
 ;
 ; Author: Amber Sprenkels <amber@electricdusk.com>
 
-%include "ge_double.asm"
-%include "ge_add.asm"
-%include "select.asm"
+%include "ge_double.mac.asm"
+%include "ge_add.mac.asm"
+%include "select.mac.asm"
 
 global crypto_scalarmult_curve13318_avx2_ladder
 

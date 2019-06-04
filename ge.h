@@ -19,6 +19,8 @@ typedef fe10 ge[3];
 #define ge_tobytes crypto_scalarmult_curve13318_avx2_ge_tobytes
 #define ge_double crypto_scalarmult_curve13318_avx2_ge_double
 #define ge_add crypto_scalarmult_curve13318_avx2_ge_add
+#define ge_double_asm crypto_scalarmult_curve13318_avx2_ge_double_asm
+#define ge_add_asm crypto_scalarmult_curve13318_avx2_ge_add_asm
 
 /*
 Write all zeros to p
@@ -71,6 +73,16 @@ void ge_add(ge dest, const ge point_1, const ge point_2);
 Double `point` into `out`.
 */
 void ge_double(ge dest, const ge point);
+
+/*
+Optimized version of ge_add.
+*/
+void ge_add_asm(ge dest, const ge point_1, const ge point_2);
+
+/*
+Optimized version of ge_double.
+*/
+void ge_double_asm(ge dest, const ge point);
 
 
 #endif // CURVE13318_GE_H_
