@@ -640,6 +640,8 @@ class TestScalarmult(unittest.TestCase):
            st.integers(0, 2**256 - 1), st.sampled_from([1, -1]))
     # @example(0, 1, 0, 1)
     def test_scalarmult(self, k, x, z, sign):
+        note('k: 0x{:02x}'.format(k))
+        
         _, point = make_ge(x, z, sign)
         note('Initial point: ' + str(point))
         if point.is_zero():
@@ -656,33 +658,18 @@ class TestScalarmult(unittest.TestCase):
         k_bytes = self.encode_k(k)
         c_bytes_out = (ctypes.c_ubyte * 64)(0)
         
-        additional_point = allocate_aligned(ge_type, 32)
-        
         ret = scalarmult(c_bytes_out, k_bytes, c_bytes_in)
-        
         c_bytes_out_x, c_bytes_out_y = TestGE.decode_bytes(c_bytes_out)
-        if c_bytes_out_x == 0 and c_bytes_out_y == 0:
-            # Don't bother for now
-            return
         
         note('INPUTS:')
         note('const uint8_t out[64] = {' + ', '.join([hex(x) for x in c_bytes_out]).replace("'", '') + '};')
         note('const uint8_t key[32] = {' + ', '.join([hex(x) for x in k_bytes]).replace("'", '') + '};')
         note('const uint8_t in[64] =  {' + ', '.join([hex(x) for x in c_bytes_in]).replace("'", '') + '};')
-        
-        note('----------------------------------------------------------------------')
-        # note('additional_point: {}'.format(['0x{:02X}'.format(x) for x in additional_point]))
-        note('  - point: {}'.format(point))
-        # x3, y3, z3 = TestGE.decode_ge(additional_point)
-        # note('  - x3: {}'.format(x3))
-        # note('  - y3: {}'.format(y3))
-        # note('  - z3: {}'.format(z3))
-        # point3 = E(x3, y3, z3)
-        # self.assertEqual(point3, 31*point)
-        # note('  - point3: {}'.format(point3))
-        # point_out = E(c_bytes_out_x, c_bytes_out_y)
-        # note('  - point_out: {}'.format(point_out))
-        note('----------------------------------------------------------------------')
+        note('----------------------------------------------------------------------')        
+        if c_bytes_out_x != c_bytes_out_y != 0:
+            note('  - point: {}'.format(point))
+            point_out = E(c_bytes_out_x, c_bytes_out_y)
+            note('  - point_out: {}'.format(point_out))
         
         self.assertEqual(ret, 0)
         actual = [int(x) for x in c_bytes_out]

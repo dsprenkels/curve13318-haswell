@@ -34,8 +34,6 @@ crypto_scalarmult_curve13318_avx2_ladder:
     mov qword [rsp - 40], r12
     mov qword [rsp - 48], r13
     mov qword [rsp - 56], rbx
-    mov qword [rsp - 64], r15
-    mov r15, rcx
         
     ; start loop
     xor rcx, rcx
@@ -126,7 +124,7 @@ crypto_scalarmult_curve13318_avx2_ladder:
     vmovdqa oword [tmp + 7*32], xmm7
     
     ; add q and p into q
-    ge_add rdi, rdi, tmp, rsp
+    ge_add rdi, tmp, rdi, rsp
     
     ; loop repeat
     add rcx, 1
@@ -135,7 +133,6 @@ crypto_scalarmult_curve13318_avx2_ladder:
 
 .end:
     ; epilogue
-    mov r15, qword [rsp - 64]
     mov rbx, qword [rsp - 56]
     mov r13, qword [rsp - 48]
     mov r12, qword [rsp - 40]

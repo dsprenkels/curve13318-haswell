@@ -13,6 +13,6 @@ Arguments:
   - k   Pointer to the exponent (32 bytes)
   - p   Pointer to the input point (32 bytes)
 */
-int scalarmult(uint8_t *out, const uint8_t *k, const uint8_t *p);
+int crypto_scalarmult(uint8_t *out, const uint8_t *k, const uint8_t *p);
 
 #endif // CURVE13318_SCALARMULT_H_

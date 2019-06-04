@@ -38,6 +38,8 @@
     %endrep
     fe10x4_carry_body_store t5
     
+    ; assume x1, y1, z1, x2, y2, z2 ≤ 1.01 * 2^26
+    
     %assign i 0
     %rep 10
         ; TODO(dsprenkels) In this part, because of the broadcasts and the blends, the front-end
@@ -47,16 +49,16 @@
         vpbroadcastq ymm1, qword [t5 + 32*i]        ; [y1, y1, y1, y1]
         vpbroadcastq ymm2, qword [z1 + i*8]         ; [z1, z1, z1, z1]
         vpbroadcastq ymm3, qword [x2 + i*8]         ; [x2, x2, x2, x2]
-        vpbroadcastq ymm4, qword [t5 + 32*i + 8]   ; [y2, y2, y2, y2]
+        vpbroadcastq ymm4, qword [t5 + 32*i + 8]    ; [y2, y2, y2, y2]
         vpbroadcastq ymm5, qword [z2 + i*8]         ; [z2, z2, z2, z2]
         
         vpblendd ymm6, ymm0, ymm1, 0b11000000       ; [x1, x1, x1, y1]
         vpblendd ymm7, ymm1, ymm2, 0b11000011       ; [z1, y1, y1, z1]
-        vpaddq ymm6, ymm6, ymm7                     ; compute [v14, v4, v4, v9] ≤ ??
+        vpaddq ymm6, ymm6, ymm7                     ; compute [v14, v4, v4, v9] ≤ 1.01 * 2^27
         vmovdqa yword [t3 + 32*i], ymm6             ; t3 = [??, ??, v4, v9]
         vpblendd ymm8, ymm3, ymm4, 0b11000000       ; [x2, x2, x2, y2]
         vpblendd ymm9, ymm4, ymm5, 0b11000011       ; [z2, y2, y2, z2]
-        vpaddq ymm8, ymm8, ymm9                     ; compute [v15, v5, v5, v10] ≤ ??
+        vpaddq ymm8, ymm8, ymm9                     ; compute [v15, v5, v5, v10] ≤ 1.01 * 2^27
         vmovdqa yword [t4 + 32*i], ymm8             ; t4 = [??, ??, v5, v10]
 
         vpblendd ymm7, ymm7, ymm0, 0b00001100       ; [z1, x1, y1, z1]
@@ -69,7 +71,8 @@
         %assign i (i + 1) % 10
     %endrep
 
-    fe10x4_mul t2, t0, t1, t5                   ; compute [v16, v1, v2, v3]
+    fe10x4_mul t2, t0, t1, t5                   ; compute [v16, v1, v2, v3] 
+    ; v{16,1,2,3} ≤ 1.07 * 2^26
 
     %assign i 0
     %rep 10
@@ -88,19 +91,19 @@
         mov r9, qword [t2 + 32*i + 8]           ; v1
         mov r11, qword [t2 + 32*i + 24]         ; v3
         mov r10, qword [t2 + 32*i + 16]         ; v2
-        lea r12, [r9 + r11]                     ; compute v17
+        lea r12, [r9 + r11]                     ; compute v17 ≤ 1.01 * 2^27
         mov rax, qword [t2 + 32*i]              ; v16
-        lea r13, [r9 + r10]                     ; compute v7
+        lea r13, [r9 + r10]                     ; compute v7 ≤ 1.01 * 2^27
         %if j == 0
-            mov r8, 0x3FFFFED0                  ; 4*p
+            mov r8, 0xFFFFFB4                   ; 4*p
         %elif j == 1
-            mov r8, 0x1FFFFFF0                  ; 4*p
+            mov r8, 0x7FFFFFC                   ; 4*p
         %elif j == 2
-            mov r8, 0x3FFFFFF0                  ; 4*p
+            mov r8, 0xFFFFFFC                   ; 4*p
         %else
             %error
         %endif
-        sub r13, r8                             ; v7 - 4*p
+        sub r13, r8                             ; v7 - 4*p; r13 ≥ -1.01 * 2^28
         mov qword [t0 + 32*i + 16], r13         ; t0 = [??, ??, v7 - 4*p, ??]
         lea r13, [r10 + r11]                    ; compute v12
         sub r13, r8                             ; v12 - 4*p
