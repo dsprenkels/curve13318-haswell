@@ -75,7 +75,7 @@ ge_double_asm = curve13318.crypto_scalarmult_curve13318_avx2_ge_double_asm
 ge_double_asm.argtypes = [ge_type] * 2
 
 scalarmult = curve13318.crypto_scalarmult_curve13318_avx2_scalarmult
-scalarmult.argtypes = [ctypes.c_ubyte * 64, ctypes.c_ubyte * 32, ctypes.c_ubyte * 64, ge_type]
+scalarmult.argtypes = [ctypes.c_ubyte * 64, ctypes.c_ubyte * 32, ctypes.c_ubyte * 64]
 select = curve13318.crypto_scalarmult_curve13318_avx2_select
 select.argtypes = [ge_type, ctypes.c_uint64, ge_type * 16]
 
@@ -658,7 +658,7 @@ class TestScalarmult(unittest.TestCase):
         
         additional_point = allocate_aligned(ge_type, 32)
         
-        ret = scalarmult(c_bytes_out, k_bytes, c_bytes_in, additional_point)
+        ret = scalarmult(c_bytes_out, k_bytes, c_bytes_in)
         
         c_bytes_out_x, c_bytes_out_y = TestGE.decode_bytes(c_bytes_out)
         if c_bytes_out_x == 0 and c_bytes_out_y == 0:
@@ -708,9 +708,7 @@ class TestScalarmult(unittest.TestCase):
                 note("MARK: k = {}; k2 = {}; x = {}; expected2 = {}".format(k, k2, x, expected2))
         
         self.assertEqual(actual, expected)
-        print("OK")
 
-    @unittest.skip('TODO')
     @given(st.integers(0, 2**255 - 1), st.integers(0, 2**256 - 1),
            st.integers(0, 2**256 - 1))
     @example(0, 0, 0)
