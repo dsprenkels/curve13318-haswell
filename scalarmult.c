@@ -145,7 +145,7 @@ static inline void compute_windows(uint8_t w[51], uint8_t *zeroth_window, const 
     *zeroth_window = ((w[0] >> 5) ^ (w[0] >> 4)) & 0x1;
 }
 
-int crypto_scalarmult_curve13318_avx2_scalarmult(uint8_t *out, const uint8_t *key, const uint8_t *in)
+int crypto_scalarmult_curve13318_avx2_scalarmult(uint8_t *out, const uint8_t *key, const uint8_t *in, ge *additional_point)
 {
     ge p, q;
     ge ptable[16];
@@ -165,7 +165,7 @@ int crypto_scalarmult_curve13318_avx2_scalarmult(uint8_t *out, const uint8_t *ke
     cmov_neutral(q, -(int64_t)(zeroth_window == 0));
     cmov(q, ptable[0], -(int64_t)(zeroth_window == 1));
     // crypto_scalarmult_curve13318_avx2_ge_double_asm(q, q);
-    crypto_scalarmult_curve13318_avx2_ladder(q, w, ptable);
+    crypto_scalarmult_curve13318_avx2_ladder(q, w, ptable, additional_point);
     // fe10_carry(&q[0]);
     // fe10_carry(&q[1]);
     // fe10_carry(&q[2]);

@@ -34,6 +34,8 @@ crypto_scalarmult_curve13318_avx2_ladder:
     mov qword [rsp - 40], r12
     mov qword [rsp - 48], r13
     mov qword [rsp - 56], rbx
+    mov qword [rsp - 64], r15
+    mov r15, rcx
         
     ; start loop
     xor rcx, rcx
@@ -56,6 +58,8 @@ crypto_scalarmult_curve13318_avx2_ladder:
     vpxor ymm8, ymm8, ymm8
     vpxor xmm9, xmm9, xmm9
     
+.compute_idx:
+    
     ; Our lookup table is one-based indexed. The neutral element is not stored
     ; in `ptable`, but written by `select`. The mapping from `bits` to `idx`
     ; is defined by the following:
@@ -64,11 +68,6 @@ crypto_scalarmult_curve13318_avx2_ladder:
     ; compute_idx bits
     ;   |  0 <= bits < 16 = bits - 1  // sign is (+)
     ;   | 16 <= bits < 32 = ~bits     // sign is (-)
-    cmp rcx, 49
-    jl .after_int3
-    int3
-.after_int3:
-    
     movzx r10, byte [rsi + rcx] ; bits
     mov rax, r10                ; copy bits
     shr r10, 4
@@ -103,21 +102,20 @@ crypto_scalarmult_curve13318_avx2_ladder:
     vpcmpeqd ymm14, ymm14, ymm14
     vpxor ymm14, ymm14, ymm15   ; ~signmask
     ; conditionally negate Y
-    vmovdqa ymm13, yword [rel .const_3P + 0*32]
-    vpsubq ymm13, ymm13, ymm2
+    vmovdqa ymm11, yword [rel .const_4P + 0*32]
+    vpsubq ymm13, ymm11, ymm2
     vpand ymm13, ymm13, ymm15
     vpand ymm12, ymm2, ymm14
     vpor ymm13, ymm13, ymm12
     vpblendd ymm2, ymm2, ymm13, 0b11110000
     vmovdqa yword [tmp + 2*32], ymm2
-    vmovdqa ymm13, yword [rel .const_3P + 1*32]
-    vpsubq ymm13, ymm13, ymm3
+    vmovdqa ymm11, yword [rel .const_4P + 1*32]
+    vpsubq ymm13, ymm11, ymm3
     vpand ymm13, ymm13, ymm15
     vpand ymm12, ymm3, ymm14
     vpor ymm3, ymm13, ymm12
     vmovdqa yword [tmp + 3*32], ymm3
-    vmovdqa ymm13, yword [rel .const_3P + 1*32]
-    vpsubq ymm13, ymm13, ymm4
+    vpsubq ymm13, ymm11, ymm4
     vpand ymm13, ymm13, ymm15
     vpand ymm12, ymm4, ymm14
     vpor ymm4, ymm13, ymm12
@@ -127,19 +125,8 @@ crypto_scalarmult_curve13318_avx2_ladder:
     vmovdqa yword [tmp + 6*32], ymm6
     vmovdqa oword [tmp + 7*32], xmm7
     
-    cmp rcx, 49
-    jne .after_int3_2
-    int3
-.after_int3_2:    
-
-    
     ; add q and p into q
     ge_add rdi, rdi, tmp, rsp
-    
-    cmp rcx, 49
-    jne .after_int3_3
-    int3
-.after_int3_3:
     
     ; loop repeat
     add rcx, 1
@@ -148,6 +135,7 @@ crypto_scalarmult_curve13318_avx2_ladder:
 
 .end:
     ; epilogue
+    mov r15, qword [rsp - 64]
     mov rbx, qword [rsp - 56]
     mov r13, qword [rsp - 48]
     mov r12, qword [rsp - 40]
@@ -172,9 +160,9 @@ times 4 dq 0x7FFFFDA000000000
 times 4 dq 0x3FFFFFE000000000
 times 4 dq 0x7FFFFFE000000000
 
-.const_3P:
-dq 0x0000000, 0x0000000, 0xBFFFFC7, 0x5FFFFFD
-dq 0xBFFFFFD, 0x5FFFFFD, 0xBFFFFFD, 0x5FFFFFD
+.const_4P:
+dq 0x00000000, 0x00000000, 0x3FFFFED0, 0x1FFFFFF0
+dq 0x3FFFFFF0, 0x1FFFFFF0, 0x3FFFFFF0, 0x1FFFFFF0
 
 align 16, db 0
 .const_2p37P_0:

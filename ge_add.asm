@@ -26,17 +26,28 @@
     %xdefine t4          %4 + 4*10*32
     %xdefine t5          %4 + 5*10*32
 
+    ; Y may just have been inverted, in which case it will be too large. :(
+    ; Then we must do an additional carry chain.
+    %assign i 0
+    %rep 10    
+        vpbroadcastq ymm%[i], qword [y1 + i*8]      ; [y1, y1, y2, y2]
+        vpbroadcastq ymm15, qword [y2 + i*8]        ; [y2, y2, y2, y2]
+        vpblendd ymm%[i], ymm%[i], ymm15, 0b11001100; [y1, y2, y1, y2]
+        
+        %assign i i+1
+    %endrep
+    fe10x4_carry_body_store t5
+    
     %assign i 0
     %rep 10
         ; TODO(dsprenkels) In this part, because of the broadcasts and the blends, the front-end
         ; cannot keep up. To slow the back-end down, we can precompute the first couple of vpmuludq
         ; instructions from the first multiplication.
-
         vpbroadcastq ymm0, qword [x1 + i*8]         ; [x1, x1, x1, x1]
-        vpbroadcastq ymm1, qword [y1 + i*8]         ; [y1, y1, y1, y1]
+        vpbroadcastq ymm1, qword [t5 + 32*i]        ; [y1, y1, y1, y1]
         vpbroadcastq ymm2, qword [z1 + i*8]         ; [z1, z1, z1, z1]
         vpbroadcastq ymm3, qword [x2 + i*8]         ; [x2, x2, x2, x2]
-        vpbroadcastq ymm4, qword [y2 + i*8]         ; [y2, y2, y2, y2]
+        vpbroadcastq ymm4, qword [t5 + 32*i + 8]   ; [y2, y2, y2, y2]
         vpbroadcastq ymm5, qword [z2 + i*8]         ; [z2, z2, z2, z2]
         
         vpblendd ymm6, ymm0, ymm1, 0b11000000       ; [x1, x1, x1, y1]
@@ -58,13 +69,6 @@
         %assign i (i + 1) % 10
     %endrep
 
-    ; fe10x4_carry_load t0
-    ; fe10x4_carry_body
-    ; fe10x4_carry_store t0
-    ; fe10x4_carry_load t1
-    ; fe10x4_carry_body
-    ; fe10x4_carry_store t1
-    
     fe10x4_mul t2, t0, t1, t5                   ; compute [v16, v1, v2, v3]
 
     %assign i 0
