@@ -28,6 +28,8 @@ all: libcurve13318.so
 
 debug: debug.c $(OBJS)
 
+timeit: timeit.c $(OBJS)
+
 libcurve13318.so: $(OBJS)
 	$(CC) $(CFLAGS) -shared -o $@ $^ $(LDFLAGS) $(LDLIBS)
 
@@ -40,7 +42,7 @@ check: libcurve13318.so
 
 .PHONY: clean
 clean:
-	$(RM) *.o *.gch *.a *.out *.so *.d *.lst debug
+	$(RM) *.o *.gch *.a *.out *.so *.d *.lst debug timeit
 
 %.d: %.asm
 	$(NASM) -MT $(patsubst %.d,%.o,$@) -M $< >$@

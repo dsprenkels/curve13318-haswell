@@ -56,8 +56,7 @@ crypto_scalarmult_curve13318_avx2_ladder:
     vpxor ymm8, ymm8, ymm8
     vpxor xmm9, xmm9, xmm9
     
-.compute_idx:
-    
+.ladderstep_compute_idx:
     ; Our lookup table is one-based indexed. The neutral element is not stored
     ; in `ptable`, but written by `select`. The mapping from `bits` to `idx`
     ; is defined by the following:
@@ -80,7 +79,8 @@ crypto_scalarmult_curve13318_avx2_ladder:
     or r8, r9                   ; idx (not zx'd)
     and r8, 0x1F                ; force idx to be in [0, 0x1F]
     ; At this point r10 is signmask. It will not be killed in select.
-    
+
+.ladderstep_select:
     select r8b, rdx
     ;   - ymm0: {X[0], X[1], X[2], X[3]}
     ;   - ymm1: {X[4], X[5], X[6], X[7]}
@@ -91,6 +91,7 @@ crypto_scalarmult_curve13318_avx2_ladder:
     ;   - ymm6: {Z[4], Z[5], Z[6], Z[7]}
     ;   - xmm7: {Z[8], Z[9]}
     
+.ladderstep_invert_y:
     vmovdqa yword [tmp + 0*32], ymm0
     vmovdqa yword [tmp + 1*32], ymm1
     
@@ -123,6 +124,7 @@ crypto_scalarmult_curve13318_avx2_ladder:
     vmovdqa yword [tmp + 6*32], ymm6
     vmovdqa oword [tmp + 7*32], xmm7
     
+.ladderstep_add:
     ; add q and p into q
     ge_add rdi, tmp, rdi, rsp
     

@@ -40,7 +40,7 @@ static void do_precomputation(ge ptable[16], const ge p)
 }
 
 // Decode the key bytes into windows and ripple the subtraction carry
-static inline void compute_windows(uint8_t w[51], uint8_t *zeroth_window, const uint8_t *e)
+static void compute_windows(uint8_t w[51], uint8_t *zeroth_window, const uint8_t *e)
 {
     w[50] = e[ 0] & 0x1F;
     w[49] = ((e[ 1] << 3) | (e[ 0] >> 5)) & 0x1F;
