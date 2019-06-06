@@ -29,17 +29,17 @@
     ; Y may just have been inverted, in which case it will be too large. :(
     ; Then we must do an additional carry chain.
     %assign i 0
-    %rep 10    
+    %rep 10
         vpbroadcastq ymm%[i], qword [y1 + i*8]      ; [y1, y1, y2, y2]
         vpbroadcastq ymm15, qword [y2 + i*8]        ; [y2, y2, y2, y2]
         vpblendd ymm%[i], ymm%[i], ymm15, 0b11001100; [y1, y2, y1, y2]
-        
+
         %assign i i+1
     %endrep
     fe10x4_carry_body_store t5
-    
+
     ; assume x1, y1, z1, x2, y2, z2 ≤ 1.01 * 2^26
-    
+
     %assign i 0
     %rep 10
         ; TODO(dsprenkels) In this part, because of the broadcasts and the blends, the front-end
@@ -51,7 +51,7 @@
         vpbroadcastq ymm3, qword [x2 + i*8]         ; [x2, x2, x2, x2]
         vpbroadcastq ymm4, qword [t5 + 32*i + 8]    ; [y2, y2, y2, y2]
         vpbroadcastq ymm5, qword [z2 + i*8]         ; [z2, z2, z2, z2]
-        
+
         vpblendd ymm6, ymm0, ymm1, 0b11000000       ; [x1, x1, x1, y1]
         vpblendd ymm7, ymm1, ymm2, 0b11000011       ; [z1, y1, y1, z1]
         vpaddq ymm6, ymm6, ymm7                     ; compute [v14, v4, v4, v9] ≤ 1.01 * 2^27
@@ -72,7 +72,7 @@
     %endrep
 
     fe10x4_mul t2, t0, t1, t5                   ; compute [v16, v1, v2, v3] 
-    ; v{16,1,2,3} ≤ 1.07 * 2^26
+    ; v{16,1,2,3} ≤ 1.01 * 2^26
 
     %assign i 0
     %rep 10
@@ -105,24 +105,24 @@
         %endif
         sub r13, r8                             ; v7 - 4*p; r13 ≥ -1.01 * 2^28
         mov qword [t0 + 32*i + 16], r13         ; t0 = [??, ??, v7 - 4*p, ??]
-        lea r13, [r10 + r11]                    ; compute v12
-        sub r13, r8                             ; v12 - 4*p
+        lea r13, [r10 + r11]                    ; compute v12 ≤ 1.01 * 2^27
+        sub r13, r8                             ; v12 - 4*p; r13 ≥ -1.01 * 2^28
         mov qword [t0 + 32*i + 24], r13         ; t0 = [??, ??, v7 - 4*p, v12 - 4*p]
-        sub rax, r12                            ; compute v18
+        sub rax, r12                            ; compute -1.01 * 2^27 ≤ v18 ≤ 1.01 * 2^27
         mov r8, rax                             ; rename v18
-        imul r12, r11, 13318                    ; compute v19
-        imul rax, rax, 13318                    ; compute v25
-        sub r8, r12                             ; compute v20
-        lea r8, [2*r8 + r8]                     ; compute v22
+        imul r12, r11, 13318                    ; compute v19 ≤ 1.65 * 2^39
+        imul rax, rax, 13318                    ; compute -1.65 * 2^40 ≤ v25 ≤ 1.65 * 2^40
+        sub r8, r12                             ; compute -1.65 * 2^39 ≤ v20 ≤ 1.65 * 2^39
+        lea r8, [2*r8 + r8]                     ; compute -1.24 * 2^41 ≤ v22 ≤ 1.24 * 2^41
         mov r13, r8                             ; rename v22
-        add r8, r10                             ; compute v24
-        sub r10, r13                            ; compute v23
-        lea r13, [2*r11 + r11]                  ; compute v27
-        sub rax, r9                             ; compute v25 - v1
-        sub rax, r13                            ; compute v29
-        lea rax, [2*rax + rax]                  ; compute v31
-        lea r9, [2*r9 + r9]                     ; compute v33
-        sub r9, r13                             ; compute v34
+        add r8, r10                             ; compute -1.24 * 2^41 ≤ v24 ≤ 1.24 * 2^41
+        sub r10, r13                            ; compute -1.24 * 2^41 ≤ v23 ≤ 1.24 * 2^41
+        lea r13, [2*r11 + r11]                  ; compute v27 ≤ 1.52 * 2^27
+        sub rax, r9                             ; compute -1.65 * 2^40 ≤ v25 - v1 ≤ 1.65 * 2^40
+        sub rax, r13                            ; compute -1.65 * 2^40 ≤ v29 ≤ 1.65 * 2^40
+        lea rax, [2*rax + rax]                  ; compute -1.24 * 2^42 ≤ v31 ≤ 1.24 * 2^42
+        lea r9, [2*r9 + r9]                     ; compute v33 ≤ 1.52 * 2^27
+        sub r9, r13                             ; compute -1.52 * 2^27 ≤ v34 ≤ 1.52 * 2^27
 
         vmovq xmm15, rax                        ; [v31, ??]
         vmovq xmm14, r10                        ; [v23, ??]
@@ -131,13 +131,17 @@
         vmovq xmm14, r8                         ; [v24, ??]
         vpunpcklqdq xmm%[i], xmm%[i], xmm14     ; [v34, v24]
         vinserti128 ymm%[i], ymm%[i], xmm15, 1  ; [v34, v24, v31, v23]
-        vpbroadcastq ymm15, qword [rel .const_2p32P + j*8]                              
-        vpaddq ymm%[i], ymm%[i], ymm15
+
+        ; Push all values into the positive domain
+        vpbroadcastq ymm15, qword [rel .const_2p32P + j*8] ; > 2^57
+        vpaddq ymm%[i], ymm%[i], ymm15          ; 0 ≤ {} ≤ 1.00 * 2^58
 
         %assign i (i + 1) % 10
     %endrep
 
     fe10x4_carry_body
+    ; v{34,24,31,23} ≤ 1.01 * 2^26
+
     %assign i 0
     %rep 10
         vmovdqa yword [t2 + 32*i], ymm%[i]          ; t2 = [v34, v24, v31, v23]
@@ -146,25 +150,30 @@
         ; TODO(dsprenkels) ^ Merge these stores into carry and precompute 1st mul round
         %assign i (i + 1) % 10
     %endrep
+
     fe10x4_mul_body t3, t4, t5                  ; compute [v36, v37, v6, v11]
     fe10x4_carry_body
+    ; v{36,37,6,11} ≤ 1.01 * 2^26
 
     %assign i 2
     %rep 10
         vmovq rax, xmm%[i]
         vpextrq r8, xmm%[i], 1
-        add rax, r8                             ; compute v38
+        add rax, r8                             ; compute v38 ≤ 1.01 * 2^27
         mov qword [y3 + 8*i], rax               ; store y3
-                
+
         vmovdqa ymm15, yword [t0 + 32*i]        ; [??, ??, v7 - 4*p, v12 - 4*p]
-        vpsubq ymm15, ymm%[i], ymm15            ; compute [??, ??, v8 + 4*p, v13 + 4*p]
+        vpsubq ymm15, ymm%[i], ymm15            ; compute [??, ??, v8 + 4*p, v13 + 4*p] ≤ 1.27 * 2^28
         vpermq ymm15, ymm15, 0b11111010         ; [v8, v8, v13, v13]
         vmovdqa yword [t3 + 32*i], ymm15        ; t3 = [v8, v8, v13, v13]
-        
+
         %assign i (i + 1) % 10
     %endrep
 
+    ;   - t3 ≤ 1.27 * 2^28
+    ;   - t2 ≤ 1.01 * 2^26
     fe10x4_mul_body t3, t2, t5                  ; compute [v42, v39, v35, v41]
+    ;   - v{42,39,35,41} ≤ 1.34 * 2^62
 
     ; TODO(dsprenkels) Interleave this loop s.t. we need less registers
     vmovdqa xmm15, oword [rel .const_2p37P_2p37P_2p37P_2p37P + 1*32]
@@ -178,7 +187,7 @@
         %else
             %assign j 2
         %endif
-        
+
         vpermq ymm13, ymm%[i], 0b00011011       ; [v41, v35, v39, v42]
         %if i == 0
             vpaddq xmm12, xmm%[i], oword [rel .const_2p37P_2p37P_2p37P_2p37P + 0*32]
@@ -187,17 +196,19 @@
         %else
             vpaddq xmm12, xmm%[i], xmm14
         %endif
-        vpsubq xmm12, xmm12, xmm13              ; compute [??, v40]
-        vpaddq xmm13, xmm%[i], xmm13            ; compute [v43, ??] 
+        ; 2^27P ≤ 1.00 * 2^63
+        vpsubq xmm12, xmm12, xmm13              ; compute 0 ≤ [??, v40] ≤ 1.00 * 2^63
+        vpaddq xmm13, xmm%[i], xmm13            ; compute [v43, ??] ≤ 1.34 * 2^63
         vpblendd xmm%[i], xmm13, xmm12, 0b1100  ; [v43, v40]
 
         %assign i (i + 1) % 10
     %endrep
     ; TODO(dsprenkels) Implement xmm-specific carry
-    fe10x4_carry_body    
+    fe10x4_carry_body
+    ;   - v{43,40} ≤ 1.01 * 2^26
     %assign i 0
     %rep 10
-        ; TODO(dsprenkels) We can optimize this if we store x and z packed together
+        ; TODO(dsprenkels) We can maybe optimize this if we store x and z packed together
         vmovq qword [z3 + 8*i], xmm%[i]
         vpextrq qword [x3 + 8*i], xmm%[i], 1
 
@@ -206,13 +217,8 @@
 
     %pop ge_add_ctx
 %endmacro
-    
+
 %macro ge_add_consts 0
-    align 32, db 0
-    .const_0_0_4P_4P:
-    times 4 dq 0x3FFFFED0
-    times 4 dq 0x1FFFFFF0
-    times 4 dq 0x3FFFFFF0
     align 32, db 0
     .const_2p37P_2p37P_2p37P_2p37P:
     times 4 dq 0x7FFFFDA000000000
@@ -224,5 +230,5 @@
     dq 0x1FFFFFF00000000
     dq 0x3FFFFFF00000000
 %endmacro
-    
+
 %endif
