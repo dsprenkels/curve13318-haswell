@@ -86,10 +86,6 @@
             %assign j 2
         %endif
 
-        ; TODO(dsprenkels) This block has enough latency, that we don't need the interleaving
-        ; carry chain here. We would do good to put a non-interleaved carry chain at the end
-        ; of this block.
-
         mov r9, qword [t2 + 32*i + 8]           ; v1
         mov r11, qword [t2 + 32*i + 24]         ; v3
         mov r10, qword [t2 + 32*i + 16]         ; v2
@@ -205,9 +201,10 @@
 
         %assign i (i + 1) % 10
     %endrep
-    ; TODO(dsprenkels) Implement xmm-specific carry
+
     fe10x4_carry_body
     ;   - v{43,40} ≤ 1.01 * 2^26
+
     %assign i 0
     %rep 10
         ; TODO(dsprenkels) We can maybe optimize this if we store x and z packed together

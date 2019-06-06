@@ -27,12 +27,6 @@ global crypto_scalarmult_curve13318_avx2_ge_double_asm
 
     %assign i 0
     %rep 10
-        ; TODO(dsprenkels) The reciprocal throughput of this block is 3 cycles.
-        ; I.e. the front-end does not seem to be able to keep up. This block
-        ; would be an ideal spot to precompute some squaring values to slow
-        ; down the back-end.
-        ; For example: all diagonals, or adjacent terms.
-
         vpbroadcastd ymm14, dword [x + 4*i]          ; [X, X, X, X] ≤ 1.01 * 2^26
         vpbroadcastd ymm13, dword [y + 4*i]          ; [Y, Y, Y, Y] ≤ 1.01 * 2^27
         vpbroadcastd ymm12, dword [z + 4*i]          ; [Z, Z, Z, Z] ≤ 1.01 * 2^26
@@ -150,7 +144,6 @@ global crypto_scalarmult_curve13318_avx2_ge_double_asm
     fe10x4_mul_body_skip_first_round t1, t2, t5 ; compute [v30, v15, v34, ??]
     ; v{30,15,34} ≤ 1.07 * 2^62
 
-    ; TODO(dsprenkels) Inline this piece into the carry chain
     vxorpd ymm12, ymm12, ymm12
     %assign i 0
     %rep 10
@@ -177,7 +170,6 @@ global crypto_scalarmult_curve13318_avx2_ge_double_asm
         %assign i (i + 1) % 10
     %endrep
 
-    ; TODO(dsprenkels) Maybe implement a xmm-specific carry chain?
     fe10x4_carry_body
 
     %assign i 2
