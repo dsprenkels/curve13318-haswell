@@ -45,12 +45,12 @@
         ; TODO(dsprenkels) In this part, because of the broadcasts and the blends, the front-end
         ; cannot keep up. To slow the back-end down, we can precompute the first couple of vpmuludq
         ; instructions from the first multiplication.
-        vpbroadcastq ymm0, qword [x1 + i*8]         ; [x1, x1, x1, x1]
-        vpbroadcastq ymm1, qword [t5 + 32*i]        ; [y1, y1, y1, y1]
-        vpbroadcastq ymm2, qword [z1 + i*8]         ; [z1, z1, z1, z1]
-        vpbroadcastq ymm3, qword [x2 + i*8]         ; [x2, x2, x2, x2]
-        vpbroadcastq ymm4, qword [t5 + 32*i + 8]    ; [y2, y2, y2, y2]
-        vpbroadcastq ymm5, qword [z2 + i*8]         ; [z2, z2, z2, z2]
+        vpbroadcastq ymm0, qword [x1 + i*8]         ; [x1, x1, x1, x1] ≤ 1.01 * 2^26
+        vpbroadcastq ymm1, qword [t5 + 32*i]        ; [y1, y1, y1, y1] ≤ 1.01 * 2^26
+        vpbroadcastq ymm2, qword [z1 + i*8]         ; [z1, z1, z1, z1] ≤ 1.01 * 2^26
+        vpbroadcastq ymm3, qword [x2 + i*8]         ; [x2, x2, x2, x2] ≤ 1.01 * 2^26
+        vpbroadcastq ymm4, qword [t5 + 32*i + 8]    ; [y2, y2, y2, y2] ≤ 1.01 * 2^26
+        vpbroadcastq ymm5, qword [z2 + i*8]         ; [z2, z2, z2, z2] ≤ 1.01 * 2^26
 
         vpblendd ymm6, ymm0, ymm1, 0b11000000       ; [x1, x1, x1, y1]
         vpblendd ymm7, ymm1, ymm2, 0b11000011       ; [z1, y1, y1, z1]
@@ -170,10 +170,10 @@
         %assign i (i + 1) % 10
     %endrep
 
-    ;   - t3 ≤ 1.27 * 2^28
-    ;   - t2 ≤ 1.01 * 2^26
+    ; t3 ≤ 1.27 * 2^28
+    ; t2 ≤ 1.01 * 2^26
     fe10x4_mul_body t3, t2, t5                  ; compute [v42, v39, v35, v41]
-    ;   - v{42,39,35,41} ≤ 1.34 * 2^62
+    ; v{42,39,35,41} ≤ 1.34 * 2^62
 
     ; TODO(dsprenkels) Interleave this loop s.t. we need less registers
     vmovdqa xmm15, oword [rel .const_2p37P_2p37P_2p37P_2p37P + 1*32]
