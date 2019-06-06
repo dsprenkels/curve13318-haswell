@@ -14,11 +14,11 @@ global crypto_scalarmult_curve13318_avx2_ge_double_asm
 %macro ge_double 3
     %push ge_double_ctx
     %xdefine x3         %1
-    %xdefine y3         %1 + 10*8
-    %xdefine z3         %1 + 20*8
+    %xdefine y3         %1 + 10*4
+    %xdefine z3         %1 + 20*4
     %xdefine x          %2
-    %xdefine y          %2 + 10*8
-    %xdefine z          %2 + 20*8
+    %xdefine y          %2 + 10*4
+    %xdefine z          %2 + 20*4
     %xdefine t0         %3
     %xdefine t1         %3 + 1*10*32
     %xdefine t2         %3 + 2*10*32
@@ -33,9 +33,9 @@ global crypto_scalarmult_curve13318_avx2_ge_double_asm
         ; down the back-end.
         ; For example: all diagonals, or adjacent terms.
 
-        vpbroadcastq ymm14, qword [x + i*8]          ; [X, X, X, X] ≤ 1.01 * 2^26
-        vpbroadcastq ymm13, qword [y + i*8]          ; [Y, Y, Y, Y] ≤ 1.01 * 2^27
-        vpbroadcastq ymm12, qword [z + i*8]          ; [Z, Z, Z, Z] ≤ 1.01 * 2^26
+        vpbroadcastd ymm14, dword [x + 4*i]          ; [X, X, X, X] ≤ 1.01 * 2^26
+        vpbroadcastd ymm13, dword [y + 4*i]          ; [Y, Y, Y, Y] ≤ 1.01 * 2^27
+        vpbroadcastd ymm12, dword [z + 4*i]          ; [Z, Z, Z, Z] ≤ 1.01 * 2^26
 
         vpaddq ymm11, ymm14, ymm12                   ; [X+Z, X+Z, X+Z, X+Z] ≤ 1.01 * 2^27
         vpblendd ymm11, ymm11, ymm14, 0b00001100     ; [X+Z, X, X+Z, X+Z]
@@ -140,7 +140,7 @@ global crypto_scalarmult_curve13318_avx2_ge_double_asm
         vpermilpd xmm14, xmm%[i], 0b11          ; v14
         vpaddq xmm14, xmm%[i], xmm14            ; compute v27 ≤ 1.01 * 2^27
         vpmuludq ymm%[i], ymm15, yword [t2 + i*32]
-        vmovq qword [y3 + 8*i], xmm14           ; store y3
+        vmovd dword [y3 + 4*i], xmm14           ; store y3
 
         %assign i (i + 1) % 10
     %endrep
@@ -184,8 +184,8 @@ global crypto_scalarmult_curve13318_avx2_ge_double_asm
     %rep 10
         ; TODO(dsprenkels) Look into storing x and z packed together, because
         ; this store costs us almost 20 cycles.
-        vmovq qword [x3 + 8*i], xmm%[i]
-        vpextrq qword [z3 + 8*i], xmm%[i], 1
+        vmovd dword [x3 + 4*i], xmm%[i]
+        vpextrd dword [z3 + 4*i], xmm%[i], 2
 
         %assign i (i + 1) % 10
     %endrep

@@ -12,6 +12,7 @@ point on E is represented by its projective coordinates, i.e. (X : Y : Z).
 #include <unistd.h>
 
 typedef fe10 ge[3];
+typedef uint32_t ge_opt[32];
 
 #define ge_zero crypto_scalarmult_curve13318_avx2_ge_zero
 #define ge_copy crypto_scalarmult_curve13318_avx2_ge_copy
@@ -77,12 +78,42 @@ void ge_double(ge dest, const ge point);
 /*
 Optimized version of ge_add.
 */
-void ge_add_asm(ge dest, const ge point_1, const ge point_2);
+void ge_add_asm(ge_opt dest, const ge_opt point_1, const ge_opt point_2);
 
 /*
 Optimized version of ge_double.
 */
-void ge_double_asm(ge dest, const ge point);
+void ge_double_asm(ge_opt dest, const ge_opt point);
+
+/*
+Copy ge into ge_opt
+*/
+static inline void ge_into_ge_opt(ge_opt dest, const ge src) {
+    for (size_t i = 0; i < 10; i++) {
+        dest[i] = src[0].v[i];
+    }
+    for (size_t i = 0; i < 10; i++) {
+        dest[10 + i] = src[1].v[i];
+    }
+    for (size_t i = 0; i < 10; i++) {
+        dest[20 + i] = src[2].v[i];
+    }
+}
+
+/*
+Copy ge into ge_opt
+*/
+static inline void ge_opt_into_ge(ge dest, const ge_opt src) {
+    for (size_t i = 0; i < 10; i++) {
+        dest[0].v[i] = src[i];
+    }
+    for (size_t i = 0; i < 10; i++) {
+        dest[1].v[i] = src[10 + i];
+    }
+    for (size_t i = 0; i < 10; i++) {
+        dest[2].v[i] = src[20 + i];
+    }
+}
 
 
 #endif // CURVE13318_GE_H_

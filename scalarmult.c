@@ -3,25 +3,23 @@
 #include "ge.h"
 
 // Conditionally add an element, assumes dest == {0}
-static void cmov(ge dest, const ge src, uint64_t mask)
+static void cmov(ge_opt dest, const ge_opt src, uint32_t mask)
 {
-    for (unsigned int i = 0; i < 3; i++) {
-        for (unsigned int j = 0; j < 10; j++) {
-            dest[i].v[j] |= src[i].v[j] & mask;
-        }
+    for (unsigned int i = 0; i < 30; i++) {
+        dest[i] |= src[i] & mask;
     }
 }
 
 // Conditionally move the neutral element, assumes dest == {0}
-static void cmov_neutral(ge dest, uint64_t mask)
+static void cmov_neutral(ge_opt dest, uint32_t mask)
 {
-    dest[1].v[0] = 1 & mask;
+    dest[10] = 1 & mask;
 }
 
 // Do the table precomputation
-static void do_precomputation(ge ptable[16], const ge p)
+static void do_precomputation(ge_opt ptable[16], const ge_opt p)
 {
-    ge_copy(ptable[0], p);
+    for (size_t i = 0; i < 32; i++) ptable[0][i] = p[i];
     ge_double_asm(ptable[1], ptable[0]);
     ge_add_asm(ptable[2], ptable[1], ptable[0]);
     ge_double_asm(ptable[3], ptable[1]);
@@ -149,7 +147,8 @@ static void compute_windows(uint8_t w[51], uint8_t *zeroth_window, const uint8_t
 int crypto_scalarmult(uint8_t *out, const uint8_t *key, const uint8_t *in)
 {
     ge p, q;
-    ge ptable[16];
+    ge_opt p_opt, q_opt;
+    ge_opt ptable[16];
     uint8_t w[51], zeroth_window;
 
     int err = ge_frombytes(p, in);
@@ -158,14 +157,16 @@ int crypto_scalarmult(uint8_t *out, const uint8_t *key, const uint8_t *in)
     }
     
     // Prepare for ladder computation
-    do_precomputation(ptable, p);
+    ge_into_ge_opt(p_opt, p);
+    do_precomputation(ptable, p_opt);
     compute_windows(w, &zeroth_window, key);
 
     // Do double and add scalar multiplication
-    ge_zero(q);
-    cmov_neutral(q, -(int64_t)(zeroth_window == 0));
-    cmov(q, ptable[0], -(int64_t)(zeroth_window == 1));
-    crypto_scalarmult_curve13318_avx2_ladder(q, w, ptable);
+    for (size_t i = 0; i < 30; i++) q_opt[i] = 0;
+    cmov_neutral(q_opt, -(int32_t)(zeroth_window == 0));
+    cmov(q_opt, ptable[0], -(int32_t)(zeroth_window == 1));
+    crypto_scalarmult_curve13318_avx2_ladder(q_opt, w, ptable);
+    ge_opt_into_ge(q, q_opt);
     ge_tobytes(out, q);
 
     return 0;

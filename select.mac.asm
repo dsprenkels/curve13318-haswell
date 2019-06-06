@@ -20,66 +20,64 @@
     ; is 0.33.
     ;
     ; We use the following registers as accumulators:
-    ;   - ymm0: {X[0]-X[3]}
-    ;   - ymm1: {X[4]-X[7]}
-    ;   - ymm2: {X[8]-Y[1]}
-    ;   - ymm3: {Y[2]-Y[5]}
-    ;   - ymm4: {Y[6]-Y[9]}
-    ;   - ymm5: {Z[0]-Z[3]}
-    ;   - ymm6: {Z[4]-Z[7]}
-    ;   - xmm7: {Z[8]-Z[9]}
+    ;   - ymm0: {X[0]-X[7]}
+    ;   - ymm1: {X[8]-Y[5]}
+    ;   - ymm2: {Y[6]-Z[3]}
+    ;   - ymm3: {Z[4]-Z[9], ??, ??}
 
     ; conditionally move the elements from ptable
     
-    cmp %1, 1
-    sbb rax, rax
+    vmovq xmm15, %1
+    vpbroadcastd ymm15, xmm15
+    vpcmpeqd ymm14, ymm15, yword [rel .select_idxs + 32*0]
+    vpand ymm0, ymm14, yword [%2 + 128*0 + 32*0]
+    vpand ymm1, ymm14, yword [%2 + 128*0 + 32*1]
+    vpand ymm2, ymm14, yword [%2 + 128*0 + 32*2]
+    vpand ymm3, ymm14, yword [%2 + 128*0 + 32*3]
     
-    %assign i 0
+    %assign i 1
     %rep 15
-        vmovq xmm15, rax
-        vpbroadcastq ymm15, xmm15
-
-        ; Immediately precompute the mask for the next round
-        xor rax, rax
-        cmp %1, i+1
-        sete al
-        neg rax
-
-        %assign j 0
-        %rep 7
-            vpand ymm14, ymm15, yword [%2 + 240*i + 32*j]
-            vpor ymm%[j], ymm%[j], ymm14
-            %assign j j+1
-        %endrep
-        vpand xmm14, xmm15, oword [%2 + 240*i + 32*7]
-        vpor xmm7, xmm7, xmm14
-
+        vpcmpeqd ymm14, ymm15, yword [rel .select_idxs + 32*i]
+        vpand ymm13, ymm14, yword [%2 + 128*i + 32*0]
+        vpor ymm0, ymm0, ymm13
+        vpand ymm13, ymm14, yword [%2 + 128*i + 32*1]
+        vpor ymm1, ymm1, ymm13
+        vpand ymm13, ymm14, yword [%2 + 128*i + 32*2]
+        vpor ymm2, ymm2, ymm13
+        vpand ymm13, ymm14, yword [%2 + 128*i + 32*3]
+        vpor ymm3, ymm3, ymm13
         %assign i i+1
     %endrep
     
-    vmovq xmm15, rax
-    vpbroadcastq ymm15, xmm15
+    vpcmpeqd ymm14, ymm15, yword [rel .select_neutral_idx]
+    vpand ymm13, ymm14, yword [rel .const_y0_is_1]
+    vpor ymm1, ymm1, ymm13
+%endmacro
 
-    ; Immediately precompute the mask for the neutral-element round
-    xor rax, rax
-    cmp %1, 31
-    sete al
-
-    %assign j 0
-    %rep 7
-        vpand ymm14, ymm15, yword [%2 + 240*i + 32*j]
-        vpor ymm%[j], ymm%[j], ymm14
-        %assign j j+1
-    %endrep
-    vpand xmm14, xmm15, oword [%2 + 240*i + 32*7]
-    vpor xmm7, xmm7, xmm14
-
-    ; conditionally move the neutral element if idx == 31
-    vmovq xmm14, rax
-    vpbroadcastq ymm14, xmm14
-    vpxor ymm15, ymm15, ymm15
-    vpblendd ymm15, ymm15, ymm14, 0b00110000
-    vpor ymm2, ymm2, ymm15
+%macro select_consts 0
+    align 32, db 0
+    .select_idxs:
+    times 8 dd 0
+    times 8 dd 1
+    times 8 dd 2
+    times 8 dd 3
+    times 8 dd 4
+    times 8 dd 5
+    times 8 dd 6
+    times 8 dd 7
+    times 8 dd 8
+    times 8 dd 9
+    times 8 dd 10
+    times 8 dd 11
+    times 8 dd 12
+    times 8 dd 13
+    times 8 dd 14
+    times 8 dd 15
+    .select_neutral_idx:
+    ; Select only the third limb
+    times 8 dd 0x1F
+    .const_y0_is_1:
+    times 8 dd 0, 0, 1, 0, 0, 0, 0, 0
 %endmacro
 
 %endif

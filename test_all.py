@@ -31,6 +31,7 @@ curve13318 = ctypes.CDLL(os.path.join(os.path.abspath('.'), 'libcurve13318.so'))
 fe10_type = ctypes.c_uint64 * 10
 fe51_type = ctypes.c_uint64 * 5
 ge_type = ctypes.c_uint64 * 30
+ge_opt_type = ctypes.c_uint32 * 32
 
 # Define functions
 fe10_frombytes = curve13318.crypto_scalarmult_curve13318_avx2_fe10_frombytes
@@ -70,14 +71,14 @@ fe10x4_square = curve13318.crypto_scalarmult_curve13318_avx2_fe10x4_square_asm
 fe10x4_square.argtypes = [ctypes.c_uint64 * 40] * 2
 
 ge_add_asm = curve13318.crypto_scalarmult_curve13318_avx2_ge_add_asm
-ge_add_asm.argtypes = [ge_type] * 3
+ge_add_asm.argtypes = [ge_opt_type] * 3
 ge_double_asm = curve13318.crypto_scalarmult_curve13318_avx2_ge_double_asm
-ge_double_asm.argtypes = [ge_type] * 2
+ge_double_asm.argtypes = [ge_opt_type] * 2
 
 scalarmult = curve13318.crypto_scalarmult_curve13318_avx2_scalarmult
 scalarmult.argtypes = [ctypes.c_ubyte * 64, ctypes.c_ubyte * 32, ctypes.c_ubyte * 64]
 select = curve13318.crypto_scalarmult_curve13318_avx2_select
-select.argtypes = [ge_type, ctypes.c_uint64, ge_type * 16]
+select.argtypes = [ge_opt_type, ctypes.c_uint64, ge_opt_type * 16]
 
 class TestFE10(unittest.TestCase):
     @given(st.lists(st.integers(0, 2**63 - 1), min_size=10, max_size=10))
@@ -269,7 +270,7 @@ class TestFE10x4(unittest.TestCase):
 
 class TestGE(unittest.TestCase):
     @staticmethod
-    def encode_ge(x, y, z, fx=1, fy=None, fz=None):
+    def encode_ge(x, y, z, fx=1, fy=None, fz=None, ty=ge_type):
         """Encode a point in its C representation"""
         if fy is None: fy = fx
         if fz is None: fz = fx
@@ -283,10 +284,10 @@ class TestGE(unittest.TestCase):
             shift += mask_width
 
         stashed = []
-        p = ge_type(0)
+        p = ty(0)
         while ctypes.addressof(p) % 32 != 0:
             stashed.append(p)
-            p = ge_type(0)
+            p = ty(0)
             
         for i, limb in enumerate(x_limbs + y_limbs + z_limbs):
             p[i] = limb
@@ -449,8 +450,8 @@ class TestGE(unittest.TestCase):
     def test_double_asm(self, x, z, sign, fx, fy, fz):
         assume(fx * fz <= 2)
         (x, y, z), point = make_ge(x, z, sign)
-        c_point = self.encode_ge(x, y, z, fx, fy, fz)
-        c_point3 = self.encode_ge(F(0), F(0), F(0))
+        c_point = self.encode_ge(x, y, z, fx, fy, fz, ty=ge_opt_type)
+        c_point3 = self.encode_ge(F(0), F(0), F(0), ty=ge_opt_type)
         ge_double_asm(c_point3, c_point)
         actual_x3, actual_y3, actual_z3 = self.decode_ge(c_point3)
         expected = 2*point
@@ -579,9 +580,9 @@ class TestGE(unittest.TestCase):
         (x1, y1, z1), point1 = make_ge(x1, z1, sign1)
         (x2, y2, z2), point2 = make_ge(x2, z2, sign2)
         
-        c_point1 = self.encode_ge(x1, y1, z1, fx1, fy1, fz1)
-        c_point2 = self.encode_ge(x2, y2, z2, fx2, fy2, fz2)
-        c_point3 = self.encode_ge(F(0), F(0), F(0))
+        c_point1 = self.encode_ge(x1, y1, z1, fx1, fy1, fz1, ty=ge_opt_type)
+        c_point2 = self.encode_ge(x2, y2, z2, fx2, fy2, fz2, ty=ge_opt_type)
+        c_point3 = self.encode_ge(F(0), F(0), F(0), ty=ge_opt_type)
         ge_add_asm(c_point3, c_point1, c_point2)
         actual_x3, actual_y3, actual_z3 = self.decode_ge(c_point3)
         expected = point1 + point2
@@ -710,20 +711,17 @@ class TestScalarmult(unittest.TestCase):
         ret = scalarmult(c_bytes_out, k_bytes, c_bytes_in)
         self.assertEqual(ret, expected)
     
-
-    
-    @given(st.integers(-1, 15), st.one_of(st.none(), st.data()))
-    def test_select(self, idx, random_numbers):
-        dest_c = allocate_aligned(ge_type, 32)
-        ptable_c = allocate_aligned(ge_type * 16, 32)
+    @given(st.integers(-1, 15))
+    def test_select(self, idx):
+        dest_c = allocate_aligned(ge_opt_type, 32)
+        ptable_c = allocate_aligned(ge_opt_type * 16, 32)
         for i,_ in enumerate(ptable_c):
             for j,_ in enumerate(ptable_c[i]):
-                if random_numbers: 
-                    ptable_c[i][j] = random_numbers.draw(st.integers(0, 2**53-1))
+                ptable_c[i][j] = (i * 10000) + j
 
         if idx == -1:
             # Load neutral element
-            expected = ge_type(0)
+            expected = ge_opt_type(0)
             expected[10] = 1
             idx = 31
         else:

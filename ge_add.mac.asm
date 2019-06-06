@@ -11,14 +11,14 @@
 %macro ge_add 4
     %push ge_add_ctx
     %xdefine x3          %1
-    %xdefine y3          %1 + 10*8
-    %xdefine z3          %1 + 20*8
+    %xdefine y3          %1 + 10*4
+    %xdefine z3          %1 + 20*4
     %xdefine x1          %2
-    %xdefine y1          %2 + 10*8
-    %xdefine z1          %2 + 20*8
+    %xdefine y1          %2 + 10*4
+    %xdefine z1          %2 + 20*4
     %xdefine x2          %3
-    %xdefine y2          %3 + 10*8
-    %xdefine z2          %3 + 20*8
+    %xdefine y2          %3 + 10*4
+    %xdefine z2          %3 + 20*4
     %xdefine t0          %4
     %xdefine t1          %4 + 1*10*32
     %xdefine t2          %4 + 2*10*32
@@ -28,11 +28,13 @@
 
     ; Y may just have been inverted, in which case it will be too large. :(
     ; Then we must do an additional carry chain.
+    vxorpd ymm14, ymm14, ymm14
     %assign i 0
     %rep 10
-        vpbroadcastq ymm%[i], qword [y1 + i*8]      ; [y1, y1, y2, y2]
-        vpbroadcastq ymm15, qword [y2 + i*8]        ; [y2, y2, y2, y2]
-        vpblendd ymm%[i], ymm%[i], ymm15, 0b11001100; [y1, y2, y1, y2]
+        vpbroadcastd ymm%[i], dword [y1 + 4*i]      ; [y1, y1, y2, y2]
+        vpbroadcastd ymm15, dword [y2 + 4*i]        ; [y2, y2, y2, y2]
+        vpblendd ymm%[i], ymm%[i], ymm15, 0b11001100
+        vpblendd ymm%[i], ymm14, ymm%[i], 0b01010101; [y1, y2, y1, y2]
 
         %assign i i+1
     %endrep
@@ -45,12 +47,12 @@
         ; TODO(dsprenkels) In this part, because of the broadcasts and the blends, the front-end
         ; cannot keep up. To slow the back-end down, we can precompute the first couple of vpmuludq
         ; instructions from the first multiplication.
-        vpbroadcastq ymm0, qword [x1 + i*8]         ; [x1, x1, x1, x1] ≤ 1.01 * 2^26
+        vpbroadcastd ymm0, dword [x1 + 4*i]         ; [x1, x1, x1, x1] ≤ 1.01 * 2^26
         vpbroadcastq ymm1, qword [t5 + 32*i]        ; [y1, y1, y1, y1] ≤ 1.01 * 2^26
-        vpbroadcastq ymm2, qword [z1 + i*8]         ; [z1, z1, z1, z1] ≤ 1.01 * 2^26
-        vpbroadcastq ymm3, qword [x2 + i*8]         ; [x2, x2, x2, x2] ≤ 1.01 * 2^26
+        vpbroadcastd ymm2, dword [z1 + 4*i]         ; [z1, z1, z1, z1] ≤ 1.01 * 2^26
+        vpbroadcastd ymm3, dword [x2 + 4*i]         ; [x2, x2, x2, x2] ≤ 1.01 * 2^26
         vpbroadcastq ymm4, qword [t5 + 32*i + 8]    ; [y2, y2, y2, y2] ≤ 1.01 * 2^26
-        vpbroadcastq ymm5, qword [z2 + i*8]         ; [z2, z2, z2, z2] ≤ 1.01 * 2^26
+        vpbroadcastd ymm5, dword [z2 + 4*i]         ; [z2, z2, z2, z2] ≤ 1.01 * 2^26
 
         vpblendd ymm6, ymm0, ymm1, 0b11000000       ; [x1, x1, x1, y1]
         vpblendd ymm7, ymm1, ymm2, 0b11000011       ; [z1, y1, y1, z1]
@@ -157,10 +159,10 @@
 
     %assign i 2
     %rep 10
-        vmovq rax, xmm%[i]
-        vpextrq r8, xmm%[i], 1
-        add rax, r8                             ; compute v38 ≤ 1.01 * 2^27
-        mov qword [y3 + 8*i], rax               ; store y3
+        vmovd eax, xmm%[i]
+        vpextrd r8d, xmm%[i], 2
+        add eax, r8d                            ; compute v38 ≤ 1.01 * 2^27
+        mov dword [y3 + 4*i], eax               ; store y3
 
         vmovdqa ymm15, yword [t0 + 32*i]        ; [??, ??, v7 - 4*p, v12 - 4*p]
         vpsubq ymm15, ymm%[i], ymm15            ; compute [??, ??, v8 + 4*p, v13 + 4*p] ≤ 1.27 * 2^28
@@ -209,8 +211,8 @@
     %assign i 0
     %rep 10
         ; TODO(dsprenkels) We can maybe optimize this if we store x and z packed together
-        vmovq qword [z3 + 8*i], xmm%[i]
-        vpextrq qword [x3 + 8*i], xmm%[i], 1
+        vmovd dword [z3 + 4*i], xmm%[i]
+        vpextrd dword [x3 + 4*i], xmm%[i], 2
 
         %assign i (i + 1) % 10
     %endrep

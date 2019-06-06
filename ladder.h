@@ -25,6 +25,6 @@ Arguments:
   - windows     51 uint8_t windows
   - p           Lookup table
 */
-void crypto_scalarmult_curve13318_avx2_ladder(ge q, uint8_t windows[51], ge ptable[16]);
+void crypto_scalarmult_curve13318_avx2_ladder(ge_opt q, uint8_t windows[51], ge_opt ptable[16]);
 
 #endif // CURVE13318_LADDER_H_
