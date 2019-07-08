@@ -1,6 +1,15 @@
 ; Point doubling for E : y^2 = x^3 - 3*x + 13318 (macro)
 ;
 ; Author: Amber Sprenkels <amber@electricdusk.com>
+;
+;
+; You are probably one of only a handful of people reading this code. This
+; poem is for you:
+;
+;     A flame, eternal.
+;     The soldier fell in the war
+;     Blown out by the storm.
+;
 
 %ifndef CURVE13318_GE_DOUBLE_MAC_ASM_
 %define CURVE13318_GE_DOUBLE_MAC_ASM_
