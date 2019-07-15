@@ -331,15 +331,9 @@ class TestGE(unittest.TestCase):
             expected_y = y
             expected = 0
         except TypeError:
-            # `sqrt` failed
-            if F(x) == 0 and F(y_suggest) == 0:
-                y, expected_y = F(0), F(1)
-                z = F(0)
-                expected = 0
-            else:
-                y, expected_y = F(y_suggest), F(y_suggest)
-                z = F(1)
-                expected = -1
+            y, expected_y = F(y_suggest), F(y_suggest)
+            z = F(1)
+            expected = -1
 
         c_bytes = self.ge_to_bytes(x.lift(), y.lift())
         c_point = ge_type(0)
@@ -639,16 +633,13 @@ class TestScalarmult(unittest.TestCase):
     
     @given(st.integers(0, 2**255 - 1), st.integers(0, 2**256 - 1),
            st.integers(0, 2**256 - 1), st.sampled_from([1, -1]))
-    # @example(0, 1, 0, 1)
     def test_scalarmult(self, k, x, z, sign):
         note('k: 0x{:02x}'.format(k))
         
         _, point = make_ge(x, z, sign)
         note('Initial point: ' + str(point))
-        if point.is_zero():
-            (x, y) = F(0), F(0)
-        else:
-            (x, y) = point.xy()
+        assume(not point.is_zero())
+        (x, y) = point.xy()
         c_bytes_in = TestGE.ge_to_bytes(x.lift(), y.lift())
 
         # Assert that TestGE.ge_to_bytes and TestGE.decode_bytes are correct
@@ -675,10 +666,8 @@ class TestScalarmult(unittest.TestCase):
         self.assertEqual(ret, 0)
         actual = [int(x) for x in c_bytes_out]
         expected_point = k * point
-        if expected_point.is_zero():
-            expected_x, expected_y = F(0), F(0)
-        else:
-            expected_x, expected_y = expected_point.xy()
+        assume(not expected_point.is_zero())
+        expected_x, expected_y = expected_point.xy()
         expected = TestGE.ge_to_bytes(expected_x.lift(), expected_y.lift())
         expected = [int(x) for x in expected]
         # note('actual:   ' + str([hex(x) for x in actual]))
@@ -701,15 +690,11 @@ class TestScalarmult(unittest.TestCase):
            st.integers(0, 2**256 - 1))
     @example(0, 0, 0)
     def test_scalarmult_invalid_point(self, k, x, y):
-        if (x, y) in E or (x, y) == (0, 0):
-            expected = 0
-        else:
-            expected = -1
         c_bytes_in = TestGE.ge_to_bytes(x, y)
         k_bytes = self.encode_k(k)
         c_bytes_out = (ctypes.c_ubyte * 64)(0)
         ret = scalarmult(c_bytes_out, k_bytes, c_bytes_in)
-        self.assertEqual(ret, expected)
+        self.assertEqual(ret, -1)
     
     @given(st.integers(-1, 15))
     def test_select(self, idx):

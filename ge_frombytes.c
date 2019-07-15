@@ -34,21 +34,11 @@ int ge_frombytes(ge p, const uint8_t *s)
     fe10_frombytes(&p[0], &s[0]);
     fe10_frombytes(&p[1], &s[32]);
 
-    // Handle point at infinity encoded by (0, 0)
-    uint64_t infinity = 1;
-    for (unsigned int i = 0; i < 10; i++) infinity &= p[0].v[i] == 0;
-    for (unsigned int i = 0; i < 10; i++) infinity &= p[1].v[i] == 0;
-    infinity = -((int64_t) infinity);
-    uint64_t not_infinity = infinity ^ 0xFFFFFFFFFFFFFFFF;
-
-    // Set y to 1 if we are at the point at infinity
-    p[1].v[0] |= 1 & infinity;
-
-    // Initialize z to 1 (or 0 if infinity)
-    p[2].v[0] = 1 & not_infinity;
+    // Initialize z to 1
+    p[2].v[0] = 1;
     for (unsigned int i = 1; i < 10; i++) p[2].v[i] = 0;
 
     // Check if this point is valid
-    if (not_infinity & !ge_affine_point_on_curve(p)) return -1;
+    if (!ge_affine_point_on_curve(p)) return -1;
     return 0;
 }
